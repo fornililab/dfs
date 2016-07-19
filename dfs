@@ -362,9 +362,9 @@ class PerturbationResponseJob:
         self.write_queue = write_queue
         self.details_fname = details_input_fname
         self.details_fh = None
-	if score_kwargs is None:
+        if score_kwargs is None:
             self.score_kwargs = {}
-	else:
+        else:
             self.score_kwargs = score_kwargs
         self.scaling_factors = scaling_factors
 
@@ -388,14 +388,14 @@ class PerturbationResponseJob:
         log.debug("Preparing Perturbation Job")
 
         if self.scaling_factors is not None:
-                indices = atoms.getResindices()
+            indices = atoms.getResindices()
 
-                ref_idxs = [ref.origin.getResindex() for ref in self.refs]
-                ref_scale_idx = [np.where(x == indices)[0][0] for x in ref_idxs]
-                ref_scaling_factors = np.array([self.scaling_factors[r] for r in ref_scale_idx])
-	        sf_shape = int(np.sqrt(self.scaling_factors.shape[1]))
+            ref_idxs = [ref.origin.getResindex() for ref in self.refs]
+            ref_scale_idx = [np.where(x == indices)[0][0] for x in ref_idxs]
+            ref_scaling_factors = np.array([self.scaling_factors[r] for r in ref_scale_idx])
+            sf_shape = int(np.sqrt(self.scaling_factors.shape[1]))
         else:
-                ref_scaling_factors = None
+            ref_scaling_factors = None
 
         self.ref_run = PerturbationResponseRun(self.refs,
                                                self.atoms,
@@ -768,7 +768,8 @@ class DFSJob:
                     do_use=None,
                     output_fname="",
                     details_input_fname=None,
-                    score_kwargs=None):
+                    score_kwargs=None,
+                    options={}):
 
         self.name = name
         self.atoms = atoms
@@ -776,6 +777,7 @@ class DFSJob:
         self.jobs = []
         self.job_results = None
         self.do_write = do_write
+        self.options = options
 
         if self.do_write is not None:
             if fitting_operation is None and FP_XYZ in do_write:
@@ -858,7 +860,7 @@ class DFSJob:
                                                                         self.write_queue,
                                                                         details_input_fname,
                                                                         scaling_factors = self.scaling_factors,
-									score_kwargs = score_kwargs)])
+                                    score_kwargs = score_kwargs)])
 
     def parse_config_file(self, config_file, structure, atoms):
         # XXX check uniqueness of names
@@ -867,8 +869,8 @@ class DFSJob:
         force_sets_section = "force sets"
         options_section = "options"
 
-        recognized_option_types = {"scale_forces_by_reference_cd":"bool"}
-        recognized_option_defaults = {"scale_forces_by_reference_cd":False}
+        recognized_option_types = {}
+        recognized_option_defaults = {}
         options = recognized_option_defaults.copy()
 
         required_sections = set([atom_sets_section, force_sets_section])
@@ -1000,7 +1002,6 @@ class Score:
     def score(self, multi=False, details=None, **kwargs):
         #print kwargs, "KAPPAW"
         #print "original", self.original.getCoordsets().shape
-	print kwargs, "KWW"
 
         if kwargs["score_selection_string"]:
             if self._score_selection_string != kwargs["score_selection_string"]:
@@ -1437,14 +1438,14 @@ if __name__ == "__main__":
     parser.add_argument("-n", "--np", dest="np", default=1, type=int, action="store", help="Number of cores to be used at the same time for calculation")
     parser.add_argument("-w", "--write", dest="write", nargs='*', type=str, choices=writable_data, help="Choose which data should be saved in the output file. 'all' (default behaviour) just saves everything.")
     parser.add_argument("-o", "--output", dest="output_fname", default=None, type=str, action="store", help="Filename to be used as output in case --write is specified")
-    parser.add_argument("-S", "--output-scores", dest="output_scores", default="scores", type=str, action="store", help="Filename to be used for scores")
+    parser.add_argument("-t", "--force_mode", dest="force_mode", nargs='*', type=str, default="both", choices=["fixed_force, fixed_displacement, both"], help="help text I will write")
+    parser.add_argument("-S", "--output-scores", dest="output_scores", default="scores", type=str,  action="store", help="Filename to be used for scores")
     parser.add_argument("-q", "--precision", dest="precision", default=-1, type=int, help="Number of decimal places to be used for compression (-1 for lossless)")
     parser.add_argument("-l", "--load-data", dest="input_h5_fname", default=None, type=str, help="Read data from file instead of computing it")
     parser.add_argument("-u", "--use", dest="use", nargs='*', type=str, default="all", choices=readable_data, help="Choose which data should be used to perform the calculation. 'all' (default behaviour) just uses everything.")
-    parser.add_argument("-x", "--exclude-application-sites", dest="exclude_sites", action='store_true', default=False, help="Exclude force application sites in the calculation of scores")
+    parser.add_argument("-x", "--include-application-sites", dest="exclude_sites", action='store_false', default=True, help="Include force application sites in the calculation of scores")
     parser.add_argument("--score-selection", dest="score_selection_string", default=None, type=str, action="store", help="Selection string for calculating scores")
     #XXX add option: number of normal modes
-    #XXX mutual exclusion between DLS/LTR
 
     log.basicConfig(level=log.DEBUG)
 
@@ -1599,7 +1600,45 @@ if __name__ == "__main__":
                      "score_selection_string" : args.score_selection_string
                     }
 
-    dfs_job = DFSJob(
+    
+    if force_mode == "fixed_force" or force_mode == "both":
+        output_fname = "%s_%s" % ("fixed_force", args.output_fname)
+        output_scores = "%s_%s" % ("fixed_force", args.output_scores)
+        dfs_job = DFSJob(
+                            structure,
+                            atoms,
+                            atoms,
+                            np.matrix(covariance),
+                            args.ref_dfs_config,
+                            args.dfs_config,
+                            fitting_operation   = fitting_operations[args.fitting_operation],
+                            fitting_string      = args.fit_selection,
+                            scoring_function    = scores[args.conformational_difference],
+                            scoring_function_name = args.conformational_difference,
+                            do_write            = do_write,
+                            do_use              = do_use,
+                            details_input_fname = args.input_h5_fname,
+                            score_kwargs        = score_kwargs,
+                            options             = {"scale_force_by_reference_cd" : False}
+                        )
+
+        dfs_job.run(details_output_fname=output_fname, metadata=attrs, nprocs=args.np)        
+
+        if do_write and SCORES in do_write:
+            fh = h5py.File(output_fname, 'r+')
+            fh.create_dataset(SCORES, data=score_matrix)
+            fh.create_dataset("scores_min", data=score_matrix_min)
+            fh.create_dataset("scores_max", data=score_matrix_max)
+            fh.close()
+
+        score_matrix, score_matrix_min, score_matrix_max = dfs_job.get_score_matrix()
+
+        np.savetxt("%s.dat" % output_scores, score_matrix, fmt="%.5f",)
+
+    if force_mode == "fixed_displacements" or force_mode == "both":
+        output_fname = "%s_%s" % ("fixed_displacements", args.output_fname)
+        output_scores = "%s_%s" % ("fixed_displacements", args.output_scores)        
+        dfs_job = DFSJob(
                         structure,
                         atoms,
                         atoms,
@@ -1613,23 +1652,26 @@ if __name__ == "__main__":
                         do_write            = do_write,
                         do_use              = do_use,
                         details_input_fname = args.input_h5_fname,
-                        score_kwargs        = score_kwargs
+                        score_kwargs        = score_kwargs,
+                        options             = {"scale_force_by_reference_cd" : True}
                     )
 
-    dfs_job.run(details_output_fname=args.output_fname, metadata=attrs, nprocs=args.np)
+        dfs_job.run(details_output_fname=output_fname, metadata=attrs, nprocs=args.np)
+
+        if do_write and SCORES in do_write:
+            fh = h5py.File(output_fname, 'r+')
+            fh.create_dataset(SCORES, data=score_matrix)
+            fh.create_dataset("scores_min", data=score_matrix_min)
+            fh.create_dataset("scores_max", data=score_matrix_max)
+            fh.close()
+
+        score_matrix, score_matrix_min, score_matrix_max = dfs_job.get_score_matrix()
+
+        np.savetxt("%s.dat" % output_scores, score_matrix, fmt="%.5f",)
+
 
     # XXX add option for output file name
 
-    score_matrix, score_matrix_min, score_matrix_max = dfs_job.get_score_matrix()
-
-    if do_write and SCORES in do_write:
-        fh = h5py.File(args.output_fname, 'r+')
-        fh.create_dataset(SCORES, data=score_matrix)
-        fh.create_dataset("scores_min", data=score_matrix_min)
-        fh.create_dataset("scores_max", data=score_matrix_max)
-        fh.close()
-
-    np.savetxt("%s.dat" % args.output_scores, score_matrix, fmt="%.5f",)
     #np.savetxt("%s_min.dat" % args.output_scores, score_matrix_min, fmt="%.5f",)
     #np.savetxt("%s_max.dat" % args.output_scores, score_matrix_max, fmt="%.5f",)
 
