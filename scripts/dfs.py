@@ -1165,7 +1165,7 @@ if __name__ == "__main__":
     parser.add_argument("-g", "--gamma", dest="anm_gamma", default=1.0, type=float, help="Spring force constant for ANM; default is 1.0)")
     parser.add_argument("-F", "--fitting", dest="fitting_operation", default="none", action="store", type=str, choices=fitting_operations.keys(), help="perform least square fitting between the displaced and original geometries")
     parser.add_argument("-a", "--fit-selection", dest="fit_selection", default="name CA", help="Fit the selection in --selection on this group of atoms")
-    parser.add_argument("-d", "--conformational-difference", dest="conformational_difference", choices=scores.keys(), help="type of conformational score to use", default="rmsd")
+    parser.add_argument("-d", "--conformational-difference", dest="conformational_difference", choices=scores.keys(), help="type of conformational score to use (default: drmsd)", default="drmsd")
     parser.add_argument("-n", "--np", dest="np", default=1, type=int, action="store", help="Number of cores to be used at the same time for calculation")
     parser.add_argument("-w", "--write", dest="write", nargs='*', type=str, choices=writable_data, help="Choose which data should be saved in the output file. 'all' (default behaviour) just saves everything.")
     parser.add_argument("-o", "--output", dest="output_fname", default=None, type=str, action="store", help="Filename to be used as output in case --write is specified")
