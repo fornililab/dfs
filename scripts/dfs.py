@@ -841,59 +841,22 @@ class Score:
         self.ref_original = self.original.copy()
         self.this_original = self.original.copy()
 
-        self._score_selection_string = None
-        self._score_selection = None
-
     def score(self, multi=False, details=None, **kwargs):
-        #print kwargs, "KAPPAW"
-        #print "original", self.original.getCoordsets().shape
 
-        if kwargs["score_selection_string"]:
-            if self._score_selection_string != kwargs["score_selection_string"]:
-                self._score_selection_string = kwargs["score_selection_string"]
-                self._score_selection = self.original.select(kwargs["score_selection_string"])
-
-                self.ref_original = self.ref_original.select(kwargs["score_selection_string"])
-                self.this_original = self.this_original.select(kwargs["score_selection_string"])
-
-                self.ref_structures.setAtoms(score_selection)
-                self.structures.setAtoms(score_selection)
-
-            self.ref_structures.setCoords(self._score_selection.getCoords())
-            self.structures.setCoords(self._score_selection.getCoords())
-
-            #print "original", self.original.getCoordsets().shape
-            #print "ref", self.ref_structures.getCoordsets().shape
-            #print "this", self.structures.getCoordsets().shape
-        else:
-            self.ref_structures.setCoords(self.ref_original)
-            self.structures.setCoords(self.this_original)
+        self.ref_structures.setCoords(self.ref_original)
+        self.structures.setCoords(self.this_original)
 
         if kwargs["exclude_sites"]:
             idxs = self.ref_original.getResindices()
-
 
             mask = idxs[np.logical_and.reduce([ idxs != s for s in kwargs["this_idxs"]])]
             self.ref_original = self.ref_original[mask]
             self.this_original = self.this_original[mask]
 
-            #print "original", self.original.getCoords().shape
-            #print "ref", np.delete(self.original.getCoords(), kwargs["ref_score_idxs"], axis=0).shape
-            #print "this", np.delete(self.original.getCoords(), kwargs["this_score_idxs"], axis=0).shape
-            #self.ref_original.setCoords(np.delete(self.original.getCoords(), kwargs["ref_score_idxs"], axis=0))
-            #self.this_original.setCoords(np.delete(self.original.getCoords(), kwargs["this_score_idxs"], axis=0))
-
             ref_structures = prody.Ensemble()
             structures = prody.Ensemble()
             ref_structures.setAtoms(self.ref_original)
             structures.setAtoms(self.this_original)
-
-            #print "ref cs",ref_structures.getAtoms()
-            #print "this cs", structures.getAtoms()
-            #print "ref del", np.delete(self.ref_structures.getCoordsets(), kwargs["ref_score_idxs"], axis=1).shape
-            #print "this del", np.delete(self.structures.getCoordsets(),     kwargs["this_score_idxs"], axis=1).shape
-
-
 
             mask = idxs[np.logical_and.reduce([ idxs != s for s in np.array(kwargs["this_score_idxs"]).T[0,0,:]])]
             ref_structures.addCoordset(self.ref_structures.getCoordsets()[:,mask,:])
@@ -918,7 +881,9 @@ class Score:
     get = score
 
 class ScoreRMSD(Score):
+    
     name = "rmsd"
+
     def _score(self, **kwargs):
         self.ref_structures.setCoords(self.ref_original)
         self.structures.setCoords(self.this_original)
@@ -937,34 +902,25 @@ class ScoreRMSD(Score):
         else:
             structures_per_ref = len(self.structures)
 
-        #print "strutturiamooo", structures_per_ref
-        #structures_per_ref = len(self.structures) / len(self.ref_structures)
-
         assert( len(self.structures) % len(self.ref_structures) == 0 )
         #reference_rmsds = self.ref_structures.getRMSDs().repeat(len(self.structures)/len(self.ref_structures)) # 1 1 1 2 2 2 3 3 3 ...
         #print "referenzio"
         if not self.ref_cds:
-            reference_rmsds = self.ref_structures.getRMSDs()
-        #print reference_rmsds
-        #print len(reference_rmsds)
-        #print (reference_rmsds.shape[0]/structures_per_ref, structures_per_ref)
-        #np.savetxt("reference_rmsds", reference_rmsds)
+            ref_original_c    = self.ref_original.getCoordsets()
+            ref_structures_c  = self.ref_structures.getCoordsets()
+            if ref_original_c.shape[0] == 1:
+                ref_original_c = np.repeat(ref_original_c, ref_structures_c.shape[0], axis=0)
 
-        #print "sref", structures_per_ref
+
+            reference_rmsds = self.ref_structures.getRMSDs()
+
             reference_rmsds = reference_rmsds.reshape(( reference_rmsds.shape[0]/structures_per_ref,
                                                         structures_per_ref )).T
             self.ref_cds = reference_rmsds
-        #print reference_rmsds
-        #print reference_rmsds.shape
 
-        #print len(self.structures.getRMSDs())
         dfs_rmsds = self.structures.getRMSDs().reshape(self.ref_cds.shape)
-        #print dfs_rmsds
-        scores = (self.ref_cds - dfs_rmsds)/self.ref_cds
 
-        #print (reference_rmsds - dfs_rmsds)/reference_rmsds
-        #print "MAX", np.max((reference_rmsds - dfs_rmsds)/reference_rmsds, axis=1)
-        #log.info( scores)
+        scores = (self.ref_cds - dfs_rmsds)/self.ref_cds
 
         details =   {
                         RAW_SCORES : scores,
@@ -980,6 +936,7 @@ class ScoreRMSD(Score):
 
 
 class ScoreDRMSD(Score):
+
     name = "drmsd"
 
     def __init__(self, *args, **kwargs):
@@ -1217,7 +1174,6 @@ if __name__ == "__main__":
     parser.add_argument("-S", "--output-scores", dest="output_scores", default="scores", type=str,  action="store", help="Filename to be used for scores")
     parser.add_argument("-q", "--precision", dest="precision", default=-1, type=int, help="Number of decimal places to be used for compression (-1 for lossless)")
     parser.add_argument("-x", "--include-application-sites", dest="exclude_sites", action='store_false', default=True, help="Include force application sites in the calculation of scores")
-    parser.add_argument("--score-selection", dest="score_selection_string", default=None, type=str, action="store", help="Selection string for calculating scores")
     #XXX add option: number of normal modes
 
     log.basicConfig(level=log.DEBUG)
@@ -1336,7 +1292,6 @@ if __name__ == "__main__":
         attrs = None
 
     score_kwargs = { "exclude_sites" : args.exclude_sites,
-                     "score_selection_string" : args.score_selection_string
                     }
 
     
