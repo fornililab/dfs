@@ -1169,7 +1169,7 @@ if __name__ == "__main__":
     parser.add_argument("-n", "--np", dest="np", default=1, type=int, action="store", help="Number of cores to be used at the same time for calculation")
     parser.add_argument("-w", "--write", dest="write", nargs='*', type=str, choices=writable_data, help="Choose which data should be saved in the output file. 'all' (default behaviour) just saves everything.")
     parser.add_argument("-o", "--output", dest="output_fname", default=None, type=str, action="store", help="Filename to be used as output in case --write is specified")
-    parser.add_argument("-t", "--force_mode", dest="force_mode", nargs='*', type=str, default="both", choices=["fixed_force, fixed_displacement, both"], help="help text I will write")
+    parser.add_argument("-t", "--force_mode", dest="force_mode", nargs='?', type=str, default="both", choices=["fixed_force, fixed_displacement, both"], help="help text I will write")
     parser.add_argument("-S", "--output-scores", dest="output_scores", default="scores", type=str,  action="store", help="Filename to be used for scores")
     parser.add_argument("-q", "--precision", dest="precision", default=-1, type=int, help="Number of decimal places to be used for compression (-1 for lossless)")
     parser.add_argument("-x", "--include-application-sites", dest="exclude_sites", action='store_false', default=True, help="Include force application sites in the calculation of scores")
@@ -1293,7 +1293,6 @@ if __name__ == "__main__":
     score_kwargs = { "exclude_sites" : args.exclude_sites,
                     }
 
-    
     if force_mode == "fixed_force" or force_mode == "both":
         output_fname = "%s_%s" % ("fixed_force", args.output_fname)
         output_scores = "%s_%s" % ("fixed_force", args.output_scores)
