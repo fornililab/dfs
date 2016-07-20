@@ -1159,7 +1159,6 @@ if __name__ == "__main__":
     parser.add_argument("-b", "--eigenvectors", dest="nm_eigvec_output", nargs='?', const=1, type=str, default="nmodes_eigenvectors.dat", help="Save normal modes eigenvectors as a text file")
     #parser.add_argument("-l", "--eigenvalues", dest="nm_eigval_output", nargs='?', const=1, type=str, default="nmodes_eigenvalues.dat", help="Save normal modes eigenvalues as a text file")
     parser.add_argument("-D", "--nmd", dest="nmd_output", nargs='?', const=1, type=str, default="modes.nmd", help="Save normal mode eigenvectors as a NMD file")
-    parser.add_argument("-p", "--output-pdb", dest="out_pdb", nargs='?', const=1, type=str, default="original.pdb", help="Save output structure as a PDB file")
     parser.add_argument("-f", "--dfs", dest="dfs_config", default=None, help="Configuration file for DFS runs")
     parser.add_argument("-r", "--ref-dfs", dest="ref_dfs_config", default=None, help="Configuration file for DFS runs (reference)")
     parser.add_argument("-c", "--cutoff", dest="anm_cutoff", default=15.0, type=float, help="Cut-off for generating the topology of ANM (in A; default is 15.0)")
