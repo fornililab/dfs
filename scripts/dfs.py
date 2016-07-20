@@ -126,7 +126,6 @@ class ForceSet:
     def get_vectors(self):
         return np.vstack([f.vector for f in self.forces])
 
-
 class Force:
     def __init__(self, origin, cartesian=None, spherical=None):
         if (cartesian is None and spherical is None) or (cartesian is not None and spherical is not None):
@@ -333,7 +332,6 @@ class PerturbationResponseJob:
 
         combinations = itertools.product(*(ref_combinations + self.sets))
 
-
         for combination in combinations:
 
             if self.scaling_factors is not None:
@@ -449,14 +447,11 @@ class PerturbationResponseJob:
             fitted_structures.setAtoms(self.atoms)
 
             this_idxs = [this.origin.getResindex() for this in this_comb]
-            #if len(set(this_idxs)) != len(this_idxs):
-                #continue
 
             run.prepare()
             run.run()
 
             for d,displacements in enumerate(run.results):
-                #displaced_atoms = atoms.copy()
 
                 displaced_atoms.setCoords(atoms.getCoords() + displacements.reshape((displacements.shape[0]/3,3)))
 
@@ -559,11 +554,6 @@ def _worker(work_package):
     try:
         idxs,job = work_package
         log.info("Now doing %s - starting PerturbationResponse" % str(idxs))
-        #if job.do_write is not None:
-            #log.info("PRE: Waiting for write queue to flush")
-            #while job.write_queue.qsize() > 100:
-                #time.sleep(1)
-                #continue
         job.prepare()
         job.run()
         log.info("Job %s done" % str(idxs))
@@ -573,7 +563,6 @@ def _worker(work_package):
             while job.write_queue.qsize() > 100:
                 time.sleep(1)
                 continue
-        #print (idxs, job.scores, job.min_scores, job.max_scores)
         return (idxs, job.scores, job.min_scores, job.max_scores)
     except:
         traceback.print_exc()
@@ -610,8 +599,6 @@ def _scribe(write_queue, details_fname, runsn, dtype='float32', precision=-1, me
             fh[this_group].create_dataset(data_piece[0], data=data_piece[2], dtype=dtype)
         else:
             fh[this_group].create_dataset(data_piece[0], data=data_piece[2], dtype=dtype, scaleoffset=precision)
-            #print "saved", data_piece
-
 
 class DFSJob:
     def __init__(   self,
@@ -1008,15 +995,6 @@ class ScoreDRMSD(Score):
 
     def _score(self, **kwargs):
 
-        #print self.structures.__repr__()
-        #print self.this_original.__repr__()
-        #print self.structures.getCoords().shape, "AA"
-        #print self.this_original.getCoords().shape, "BB"
-
-        #self.structures.setCoords(self.this_original.getCoords())
-
-        #self.ref_structures.setCoords(self.ref_original.getCoords())
-
         metadata_available = np.sum([map(bool,self.metadata)]) != 0
 
         if self.metadata is not None and metadata_available:
@@ -1039,71 +1017,26 @@ class ScoreDRMSD(Score):
             if ref_original_c.shape[0] == 1:
                 ref_original_c = np.repeat(ref_original_c, ref_structures_c.shape[0], axis=0)
 
-            #for i in self.ref_original.getResnums():
-                #log.error(i)
-            #log.error('---')
-            #for i in self.ref_structures.getAtoms().getResnums():
-                #log.error(i)
-
-            #log.error("SAVING")
-            #log.error("orig "+str(ref_original_c[0]))
-            #log.error("pert "+str(ref_structures_c[0]))
-
-            #log.error("ref_original"+str(ref_original_c.shape))
-            #log.error("ref_structures"+str(ref_structures_c.shape))
-
             reference_rmsds = self._get_drmsd(ref_original_c, ref_structures_c)
-            #print "ref_rmsds", reference_rmsds
 
             reference_rmsds = reference_rmsds.reshape(( reference_rmsds.shape[0]/structures_per_ref,
                                                         structures_per_ref, ))
             self.ref_cds = reference_rmsds
-            #for rrs in reference_rmsds:
-               # log.error(rrs)
-            #log.error('----------------------------')
-        #else:
-        #print reference_rmsds
-        #print reference_rmsds.shape
 
         this_original_c = self.this_original.getCoordsets()
         structures_c = self.structures.getCoordsets()
         if this_original_c.shape[0] == 1:
             this_original_c = np.repeat(this_original_c, ref_structures_c.shape[0], axis=0)
 
-
         dfs_rmsds = self._get_drmsd(this_original_c, structures_c).reshape(self.ref_cds.shape)
 
-
-        #print "dfs rmsds", dfs_rmsds
-        #print "ref rmsds", reference_rmsds
-
-        #print dfs_rmsds
-        #print dfs_rmsds.shape
-
-        #print "ref",reference_rmsds
-        #print "dfs",dfs_rmsds
-        #print "\n-----\n"
-
-        #print "CDS", self.ref_cds
-        #print "DFS", dfs_rmsds
-
         scores = (self.ref_cds - dfs_rmsds)/self.ref_cds
-
-        #print "scores", scores
-        #print "final_score", np.average(np.max(scores, axis=1))
-        # np.savetxt("raw_scores.dat", scores,fmt="%.5f")
-        # np.savetxt("raw_refs.dat", reference_rmsds,fmt="%.5f")
-        # np.savetxt("raw_sets.dat", dfs_rmsds,fmt="%.5f")
 
         details =   {
                         RAW_SCORES : scores,
                         CD : [self.ref_cds, dfs_rmsds]
                     }
 
-        #print "ref_cds", self.ref_cds
-        #log.error(str(np.max(scores, axis=1)))
-        #log.error(str(np.max(scores, axis=0)))
-        #log.error("-------------------")
         return (np.average(np.max(scores, axis=0), ),
                 np.min(    np.max(scores, axis=0), ),
                 np.max(    np.max(scores, axis=0), ), details)
@@ -1113,10 +1046,6 @@ class ScoreDRMSD(Score):
     _score_single = _score
 
     def _get_drmsd_slow(self, ref, ens, **kwargs):
-        #print type(ref), 'nostromo'
-        #print type(ens), 'barilla'
-
-        #print len(_ref)
 
         eln = float(ens.shape[1])*(float(ens.shape[1])-1)/2.0
 
@@ -1171,13 +1100,9 @@ def get_scaling_factors(original,
         fitted_ref_structures.setAtoms(atoms)
 
         for d,displacements in enumerate(r.results):
-            #print "F", r.F[d]
             displaced_atoms = original.copy()
 
             displaced_atoms.setCoords(atoms.getCoords() + displacements.reshape((displacements.shape[0]/3,3)))
-
-            #print "displ", displacements
-            #print "disat", displaced_atoms.getCoords()
 
             if fitting_operation is not None:
                 fitting_original_atoms = atoms.select(fitting_string)
@@ -1195,8 +1120,6 @@ def get_scaling_factors(original,
         else:
             filtered_fitted_ref_structures = fitted_ref_structures
 
-        #print "ZZ", filtered_fitted_ref_structures.getCoordsets().shape
-        #print r.results.shape[0], displacements.shape[0]
         coords_out.append(fitted_ref_structures.getCoordsets())
         out[this_idxs,:] = cd_function(ref_original_c, filtered_fitted_ref_structures.getCoordsets())
 
@@ -1214,11 +1137,6 @@ def inertia_tensor(atoms):
 def inertia_rotation_matrix(inertia_tensor):
     return np.linalg.eig(inertia_tensor)[1].T
 
-def transform(atoms, rotation_matrix=np.identity(3), translation_vector=np.array([0.0,0.0,0.0])):
-    # XXX possibly broken
-    t = prody.Transformation(rotation_matrix, translation_vector)
-    t.apply(atoms)
-
 def safe_savetxt(fname, data, fmt="%1.5f"):
     try:
         np.savetxt(fname, data, fmt)
@@ -1232,7 +1150,6 @@ def safe_savenpy(fname, data):
     except:
         log.error("Couldn't save file %s; exiting" % fname)
         exit(1)
-
 
 def safe_savenmd(fname, eigvs, atoms):
     try:
@@ -1348,19 +1265,6 @@ if __name__ == "__main__":
 
     # XXX: Check 1 atom per residue
 
-    # Move the structure on the COM to correctly calculate the tensor of inertia
-
-    #transform(  atoms,
-    #           translation_vector = -prody.measure.calcCenter(atoms, weights=atoms.getMasses()))
-
-    # Calculate the tensor of inertia and reorient the protein structure along the principal axes
-
-    #transform( atoms,
-    #           rotation_matrix = inertia_rotation_matrix(inertia_tensor(atoms)),
-    #           translation_vector = -prody.measure.calcCenter(atoms, weights=atoms.getMasses())      )
-
-    # Instantiate GNM model
-
     if args.covariance_input is not None:
         try:
             covariance = np.load(args.covariance_input)
@@ -1388,7 +1292,6 @@ if __name__ == "__main__":
         anm = prody.dynamics.ANM(atoms)
 
         # Build Hessian
-        # XXX: add cutoff/gamma parameters
 
         if hessian is None:
             anm.buildHessian(atoms, cutoff=args.anm_cutoff, gamma=args.anm_gamma)
@@ -1400,7 +1303,6 @@ if __name__ == "__main__":
             safe_savenpy(args.hessian_output, anm.getHessian())
 
         # Calculate NMs
-        # XXX: add option for number of modes
         anm.calcModes(n_modes = anm.numDOF())
 
         # Write eigenvectors to NMD file
@@ -1501,11 +1403,5 @@ if __name__ == "__main__":
         score_matrix, score_matrix_min, score_matrix_max = dfs_job.get_score_matrix()
 
         np.savetxt("%s.dat" % output_scores, score_matrix, fmt="%.5f",)
-
-
-    # XXX add option for output file name
-
-    #np.savetxt("%s_min.dat" % args.output_scores, score_matrix_min, fmt="%.5f",)
-    #np.savetxt("%s_max.dat" % args.output_scores, score_matrix_max, fmt="%.5f",)
 
     log.info("All done! Exiting...")
