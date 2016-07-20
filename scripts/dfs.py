@@ -268,9 +268,7 @@ class PerturbationResponseJob:
                     scoring_function=None,
                     name="",
                     do_write=None,
-                    do_use=None,
                     write_queue=None,
-                    details_input_fname=None,
                     score_kwargs=None,
                     scaling_factors=None):
         # refs, variables, atoms, covariance, name
@@ -288,9 +286,7 @@ class PerturbationResponseJob:
         self.results = None
         self.scores = None
         self.do_write = do_write
-        self.do_use = do_use
         self.write_queue = write_queue
-        self.details_fname = details_input_fname
         self.details_fh = None
         if score_kwargs is None:
             self.score_kwargs = {}
@@ -366,39 +362,8 @@ class PerturbationResponseJob:
                                                      name="%s" % (",".join(map(str, combination))),
                                                      scaling_factors = this_scaling_factors))
                                                      
-        self.is_available = {}
-        if self.details_fname is not None:
-            log.info("Data will be loaded from file %s" % self.details_fname)
-            self.details_fh = h5py.File(self.details_fname,'r')
-            #print "do_use", self.do_use
-            for d in writable_data:
-                if d in self.do_use:
-                    #print "looking4"
-                    self.is_available[d] = self.is_in_details(d)
-                    #print self.is_available[d]
-                else:
-                    self.is_available[d] = False
-        else:
-            for d in writable_data:
-                self.is_available[d] = False
-
-        #print self.is_available
-
         self.ready = True
         log.info("Preparation done.")
-    def get_data_from_details(self, combination, data_type):
-
-        if self.details_fh is None or not self.is_available[data_type]:
-            return None
-
-        combination_string = "%s/%s" % ("/".join(map(str, [fs.origin.getResindex() for fs in combination] )), data_type)
-        #print "returning COMBI", combination_string, data_type
-        if data_type == FP_XYZ or data_type == P_XYZ:
-            structures = prody.Ensemble()
-            structures.addCoordset(self.details_fh[combination_string].value)
-            return structures
-        else:
-            return self.details_fh[combination_string].value
 
     def run(self):
 
@@ -429,67 +394,48 @@ class PerturbationResponseJob:
         self.min_scores = np.zeros([len(self.indices) for i in self.sets])
         displaced_atoms = atoms.copy()
 
+        self.ref_run.prepare()
+        self.ref_run.run()
 
-        if self.is_available[P_XYZ] and self.fitting_operation is None:
-            fitted_ref_structures = self.get_data_from_details(self.refs, P_XYZ)
-        elif self.is_available[FP_XYZ] and self.fitting_operation is not None:
-            fitted_ref_structures = self.get_data_from_details(self.refs, FP_XYZ)
-        else:
-            self.ref_run.prepare(F=self.get_data_from_details(self.refs, DF))
-            self.ref_run.run(results=self.get_data_from_details(self.refs, DR))
+        fitted_ref_structures = prody.Ensemble(title="displaced_fitted_structures")
+        fitted_ref_structures.setAtoms(self.atoms)
 
-            fitted_ref_structures = prody.Ensemble(title="displaced_fitted_structures")
-            fitted_ref_structures.setAtoms(self.atoms)
+        if write_F_DR:
+            F_DR_values = np.zeros(self.ref_run.results.shape)
+        if write_FP_XYZ:
+            FP_XYZ_values = np.zeros((self.ref_run.results.shape[0],self.ref_run.results.shape[1]/3,3))
+        if write_P_XYZ:
+            P_XYZ_values = np.zeros((self.ref_run.results.shape[0],self.ref_run.results.shape[1]/3,3))
 
-            if write_F_DR:
-                F_DR_values = np.zeros(self.ref_run.results.shape)
-            if write_FP_XYZ:
-                FP_XYZ_values = np.zeros((self.ref_run.results.shape[0],self.ref_run.results.shape[1]/3,3))
-            if write_P_XYZ:
-                P_XYZ_values = np.zeros((self.ref_run.results.shape[0],self.ref_run.results.shape[1]/3,3))
-
-            if self.is_available[P_XYZ] and self.fitting_operation is None:
-                fitted_ref_structures = self.get_data_from_details(self.refs, P_XYZ)
-            elif self.is_available[FP_XYZ] and self.fitting_operation is not None:
-                fitted_ref_structures = self.get_data_from_details(self.refs, FP_XYZ)
-            else:
-                if self.is_available[P_XYZ]:
-                    loaded_P_XYZ = self.get_data_from_details(self.refs, P_XYZ)
-
-                for d,displacements in enumerate(self.ref_run.results):
-                    #displaced_atoms = atoms.copy()
-
-                    if self.is_available[P_XYZ]:
-                        displaced_atoms.setCoords(loaded_P_XYZ.getCoordsets()[d])
-                    else:
-                        displaced_atoms.setCoords(atoms.getCoords() + displacements.reshape((displacements.shape[0]/3,3)))
-                    if self.fitting_operation is not None:
-                        fitting_original_atoms = self.atoms.select(self.fitting_string)
-                        fitting_displaced_atoms = displaced_atoms.select(self.fitting_string)
-                        transformation = self.fitting_operation(fitting_displaced_atoms, fitting_original_atoms).transformation
-                        this_ref_fit = self.fitting_operation(displaced_atoms, self.atoms, transformation=transformation)
-                        fitted_ref_structures.addCoordset(this_ref_fit.transformed())
-                        if write_F_DR:
-                            F_DR_values[d,:] = (this_ref_fit.transformed().getCoords()-atoms.getCoords()).flatten()
-                        if write_FP_XYZ:
-                            FP_XYZ_values[d,:] = this_ref_fit.transformed().getCoords()
-                    else:
-                        fitted_ref_structures.addCoordset(displaced_atoms)
-
-                    if write_P_XYZ:
-                        P_XYZ_values[d,:] = displaced_atoms.getCoords()
-
-            if self.do_write is not None:
-                if write_DR:
-                    self.write_queue.put((DR, ref_idxs, self.ref_run.results))
-                if write_DF:
-                    self.write_queue.put((DF, ref_idxs, self.ref_run.F))
-                if write_FP_XYZ:
-                    self.write_queue.put((FP_XYZ, ref_idxs, FP_XYZ_values))
+        for d,displacements in enumerate(self.ref_run.results):
+            displaced_atoms.setCoords(atoms.getCoords() + displacements.reshape((displacements.shape[0]/3,3)))
+            if self.fitting_operation is not None:
+                fitting_original_atoms = self.atoms.select(self.fitting_string)
+                fitting_displaced_atoms = displaced_atoms.select(self.fitting_string)
+                transformation = self.fitting_operation(fitting_displaced_atoms, fitting_original_atoms).transformation
+                this_ref_fit = self.fitting_operation(displaced_atoms, self.atoms, transformation=transformation)
+                fitted_ref_structures.addCoordset(this_ref_fit.transformed())
                 if write_F_DR:
-                    self.write_queue.put((F_DR, ref_idxs, F_DR_values))
-                if write_P_XYZ:
-                    self.write_queue.put((P_XYZ, ref_idxs, P_XYZ_values))
+                    F_DR_values[d,:] = (this_ref_fit.transformed().getCoords()-atoms.getCoords()).flatten()
+                if write_FP_XYZ:
+                    FP_XYZ_values[d,:] = this_ref_fit.transformed().getCoords()
+            else:
+                fitted_ref_structures.addCoordset(displaced_atoms)
+
+            if write_P_XYZ:
+                P_XYZ_values[d,:] = displaced_atoms.getCoords()
+
+        if self.do_write is not None:
+            if write_DR:
+                self.write_queue.put((DR, ref_idxs, self.ref_run.results))
+            if write_DF:
+                self.write_queue.put((DF, ref_idxs, self.ref_run.F))
+            if write_FP_XYZ:
+                self.write_queue.put((FP_XYZ, ref_idxs, FP_XYZ_values))
+            if write_F_DR:
+                self.write_queue.put((F_DR, ref_idxs, F_DR_values))
+            if write_P_XYZ:
+                self.write_queue.put((P_XYZ, ref_idxs, P_XYZ_values))
 
             del self.ref_run.results
             del self.ref_run.F
@@ -506,43 +452,29 @@ class PerturbationResponseJob:
             #if len(set(this_idxs)) != len(this_idxs):
                 #continue
 
-            if self.is_available[P_XYZ] and self.fitting_operation is None:
-                fitted_structures = self.get_data_from_details(this_comb, P_XYZ)
-            elif self.is_available[FP_XYZ] and self.fitting_operation is not None:
-                fitted_structures = self.get_data_from_details(this_comb, FP_XYZ)
-            else:
-                if self.is_available[P_XYZ]:
-                    loaded_P_XYZ = self.get_data_from_details(this_comb, P_XYZ)
+            run.prepare()
+            run.run()
 
-                run.prepare(F=self.get_data_from_details(this_comb, DF))
-                run.run(results=self.get_data_from_details(this_comb, DR))
+            for d,displacements in enumerate(run.results):
+                #displaced_atoms = atoms.copy()
 
-                for d,displacements in enumerate(run.results):
-                    #displaced_atoms = atoms.copy()
+                displaced_atoms.setCoords(atoms.getCoords() + displacements.reshape((displacements.shape[0]/3,3)))
 
-                    if self.is_available[P_XYZ]:
-                        displaced_atoms.setCoords(loaded_P_XYZ.getCoordsets()[d])
-                    else:
-                        displaced_atoms.setCoords(atoms.getCoords() + displacements.reshape((displacements.shape[0]/3,3)))
+                if self.fitting_operation is not None:
+                    fitting_original_atoms = self.atoms.select(self.fitting_string)
+                    fitting_displaced_atoms = displaced_atoms.select(self.fitting_string)
+                    transformation = self.fitting_operation(fitting_displaced_atoms, fitting_original_atoms).transformation
+                    this_fit = self.fitting_operation(displaced_atoms, self.atoms, transformation=transformation)
+                    fitted_structures.addCoordset(this_fit.transformed())
+                    if write_F_DR:
+                        F_DR_values[d,:] = (this_ref_fit.transformed().getCoords()-atoms.getCoords()).flatten()
+                    if write_FP_XYZ:
+                        FP_XYZ_values[d,:] = this_fit.transformed().getCoords()
+                else:
+                    fitted_structures.addCoordset(displaced_atoms)
 
-                    if self.fitting_operation is not None:
-                        fitting_original_atoms = self.atoms.select(self.fitting_string)
-                        fitting_displaced_atoms = displaced_atoms.select(self.fitting_string)
-                        transformation = self.fitting_operation(fitting_displaced_atoms, fitting_original_atoms).transformation
-                        this_fit = self.fitting_operation(displaced_atoms, self.atoms, transformation=transformation)
-                        fitted_structures.addCoordset(this_fit.transformed())
-                        if write_F_DR:
-                            F_DR_values[d,:] = (this_ref_fit.transformed().getCoords()-atoms.getCoords()).flatten()
-                        if write_FP_XYZ:
-                            FP_XYZ_values[d,:] = this_fit.transformed().getCoords()
-                    else:
-                        fitted_structures.addCoordset(displaced_atoms)
-
-                    if write_P_XYZ:
-                        P_XYZ_values[d,:] = displaced_atoms.getCoords()
-            #print "SCoring"
-            #print fitted_ref_structures.getCoordsets()
-            #print fitted_structures.getCoordsets()
+                if write_P_XYZ:
+                    P_XYZ_values[d,:] = displaced_atoms.getCoords()
 
             ref_score_idxs = [ np.where(c.origin.getResindex() == self.indices) for c in this_ref ]
             this_score_idxs = [ np.where(c.origin.getResindex() == self.indices) for c in this_comb ]
@@ -695,9 +627,7 @@ class DFSJob:
                     scoring_function_name=None,
                     name="",
                     do_write=None,
-                    do_use=None,
                     output_fname="",
-                    details_input_fname=None,
                     score_kwargs=None,
                     options={}):
 
@@ -786,9 +716,7 @@ class DFSJob:
                                                                         scoring_function,
                                                                         "",
                                                                         do_write,
-                                                                        do_use,
                                                                         self.write_queue,
-                                                                        details_input_fname,
                                                                         scaling_factors = self.scaling_factors,
                                     score_kwargs = score_kwargs)])
 
@@ -1371,8 +1299,6 @@ if __name__ == "__main__":
     parser.add_argument("-t", "--force_mode", dest="force_mode", nargs='*', type=str, default="both", choices=["fixed_force, fixed_displacement, both"], help="help text I will write")
     parser.add_argument("-S", "--output-scores", dest="output_scores", default="scores", type=str,  action="store", help="Filename to be used for scores")
     parser.add_argument("-q", "--precision", dest="precision", default=-1, type=int, help="Number of decimal places to be used for compression (-1 for lossless)")
-    parser.add_argument("-l", "--load-data", dest="input_h5_fname", default=None, type=str, help="Read data from file instead of computing it")
-    parser.add_argument("-u", "--use", dest="use", nargs='*', type=str, default="all", choices=readable_data, help="Choose which data should be used to perform the calculation. 'all' (default behaviour) just uses everything.")
     parser.add_argument("-x", "--include-application-sites", dest="exclude_sites", action='store_false', default=True, help="Include force application sites in the calculation of scores")
     parser.add_argument("--score-selection", dest="score_selection_string", default=None, type=str, action="store", help="Selection string for calculating scores")
     #XXX add option: number of normal modes
@@ -1392,17 +1318,6 @@ if __name__ == "__main__":
     if do_write is not None:
         log.info("this information will be written to file: %s" % (", ".join(list(do_write))))
         import h5py
-
-    if args.input_h5_fname is None:
-        do_use = None
-    elif args.use == [] or (ALL in args.use):
-        if len(args.use) > 1:
-            log.warning("all was specified in option --use, together with others; all will be used.")
-        do_use = readable_data[1:]
-    else:
-        do_use = args.use
-    if do_use is not None:
-        log.info("this information will be read from file: %s" % (", ".join(list(do_use))))
 
     if args.covariance_input and args.hessian_input:
         log.error("You cannot specify covariance matrix and hessian at the same time. Exiting...")
@@ -1488,20 +1403,12 @@ if __name__ == "__main__":
         # XXX: add option for number of modes
         anm.calcModes(n_modes = anm.numDOF())
 
-        # Write eigenvalues to file
-        # safe_savetxt(args.nm_eigval_output, anm.getEigvals())
-
-        # Write eigenvectors to file
-        # safe_savetxt(args.nm_eigvec_output, anm.getEigvecs())
-
         # Write eigenvectors to NMD file
         safe_savenmd(args.nmd_output, anm, atoms)
 
         covariance = anm.getCovariance()
         if args.covariance_output:
             safe_savenpy(args.covariance_output, covariance)
-    #def __init__(self, atoms, original, covariance, reference_config_file, config_file,
-    #           fitting_operation=None, fitting_string="", fitting_args=None, fitting_kwargs=None, scoring_function=None, name=""):
 
     if do_write is not None:
 
@@ -1546,8 +1453,6 @@ if __name__ == "__main__":
                             scoring_function    = scores[args.conformational_difference],
                             scoring_function_name = args.conformational_difference,
                             do_write            = do_write,
-                            do_use              = do_use,
-                            details_input_fname = args.input_h5_fname,
                             score_kwargs        = score_kwargs,
                             options             = {"scale_force_by_reference_cd" : False}
                         )
@@ -1580,8 +1485,6 @@ if __name__ == "__main__":
                         scoring_function    = scores[args.conformational_difference],
                         scoring_function_name = args.conformational_difference,
                         do_write            = do_write,
-                        do_use              = do_use,
-                        details_input_fname = args.input_h5_fname,
                         score_kwargs        = score_kwargs,
                         options             = {"scale_force_by_reference_cd" : True}
                     )
