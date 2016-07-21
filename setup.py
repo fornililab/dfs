@@ -4,9 +4,7 @@ import platform
 from os import sep as dirsep
 from os.path import isfile, join
 
-from distutils.core import setup
-from distutils.extension import Extension
-from distutils.command.install import install
+from setuptools import setup, Extension
 from Cython.Build import cythonize
 
 if sys.version_info[:2] < (2, 6):
@@ -42,11 +40,15 @@ with open('README.md') as inp:
     long_description = inp.read()
 
 extensions = [
-    Extension('libdfs', ['libdfs.pyx'],
+    Extension('dfsutils.libdfs', ['dfsutils/libdfs.pyx'],
     		include_dirs=[numpy.get_include()]) 
     ]
 
+packages = ['dfsutils']
+
 scripts = ['scripts/dfs']
+
+
 
 setup(
     name='DFS',
@@ -56,6 +58,7 @@ setup(
     description='A Python Package for the prediction of compensatory mutations in proteins',
     long_description=long_description,
     url='http://www.google.com',
+    packages=packages,
     ext_modules=cythonize(extensions),
     license='GPL v3',
     keywords=('protein, dynamics, elastic network model, '

@@ -17,7 +17,8 @@
 
 import prody
 from prody import SelectionError
-from libdfs import _get_drmsd
+from dfsutils import *
+from dfsutils.libdfs import _get_drmsd
 import logging as log
 import numpy as np
 import ConfigParser as cp

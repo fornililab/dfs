@@ -1,4 +1,4 @@
-    # data_muncher.py - Write data in .h5 files from DFS runs in easily readable formats
+# data_muncher.py - Write data in .h5 files from DFS runs in easily readable formats
 # Copyright (C) 2015 Matteo Tiberti <matteo.tiberti@gmail.com>
 #
 # This program is free software: you can redistribute it and/or modify
@@ -18,7 +18,7 @@ import h5py
 import numpy as np
 import logging as log
 import prody as pd
-from perturbation_magic import *
+from dfsutils import *
 
 def traverse_tree(fh, current="/", data_types=[]):
     if not data_types:
