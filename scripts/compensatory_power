@@ -19,7 +19,22 @@
 import numpy as np
 import prody as pd
 from prody import LOGGER as log
-import logging as log
+
+intro="""Compensatory power calculates the compensatory power index from a .dat
+ASCII matrix file written by the dfs script. The Compensatory power is, per
+every residue i, equal to the number of residues predicted as rescued by 
+residue i normalized by the number of contacts that residue i has in the ANM
+model. The cut-off c is 0 by default."""
+
+outro="""The script requires as arguments i) a .dat matrix file coming from a
+DFS run and ii) the PDB file originally used for the dfs run. You will also need
+to provide the same selection string (-s option) that has been provided to 
+the dfs script (which is by default 'name CA'). By default, compensatory power
+is calculated (-t rescue_ability), but it is also possible to calculate the 
+ability of each residue to be compensated in a similar way (-t rescuability).
+Options -c and -d allow to tune the rescuability score cut-off and the distance
+cut-off used to calculate the number of contacts, respectively. Option """
+
 
 def get_contacts(s, dist_co):
 	return np.sum(pd.buildDistMatrix(s) <= dist_co, axis=0, dtype=np.float)-1
@@ -102,8 +117,6 @@ if __name__ == '__main__':
                                 k += 1
                                 this_i = idx
                         occupancies.append(np.float(cutoff_bool[k]))
-        
-                
 
 	if args.pdb_outfile is not None:
                 if args.percentile:

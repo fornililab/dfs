@@ -35,13 +35,6 @@ import os
 import traceback
 import StringIO
 
-scores =    {   "rmsd": ScoreRMSD,
-                "drmsd": ScoreDRMSD,
-            }
-
-fitting_operations =    {   "lsq_fit" : LsqFitting,
-                            "none" : None
-                        }
 
 intro = """dfs implements the Dual Force Scanning method for the identification 
 of compensatory mutations in proteins as detailed in:
@@ -194,7 +187,13 @@ Calculation of the rescuability score
 """
 
 
+scores =    {   "rmsd": ScoreRMSD,
+                "drmsd": ScoreDRMSD,
+            }
 
+fitting_operations =    {   "lsq_fit" : LsqFitting,
+                            "none" : None
+                        }
 
 default_ref_config_string="""[ atom sets ]
 

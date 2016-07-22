@@ -15,8 +15,62 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/li.censes/>.
 
-intro_text = ""
-outro_text = ""
+
+intro = """data_muncher reads and digests a HDF5 binary format data file 
+written by dfs and writes files in the current directory that are easier to 
+access and read. It saves numerical data types as .npz numpy-readable files or
+text files and structural data as .dcd trajectory files. Depending on what is 
+requested, data_muncher can write a huge number of files that take big amounts 
+of disk space, so be careful for what you ask for :)"""
+
+outro = """data_muncher accepts as argument just a .h5 file written by dfs. By
+default, it writes several user-readable files with user-friendly names. Option
+-w works like option -w of dfs, but in this case it allows the user to select
+what should be extracted from the .h5 file. The following keywords are 
+accepted:
+
+* force_vectors: the force vectors used in Linear Response Theory
+* displacements: atomic displacements induced by the force vectors
+* displacements_after_fit: atomic displacements between the perturbed and non-
+perturbed structure after least-square fitting before them has been 
+performed. Only meaningful if fitting has been performed.
+* perturbed_coordinates: atomic coordinates of the original structure to which
+atomic displacements have been applied. 
+* fitted_perturbed_coordinates: atomic coordinates of the original structure to 
+which atomic displacements and least square fitting have been applied. Only 
+meaningful if fitting has been performed.
+* score_matrix: Rescuability score matrix
+* raw_score_matrix: score matrix per every residue pair, before the final R 
+value is calculated (see the paper for details)
+* pm_cdm: conformational distance values for application of a single force on
+the considered pathogenic residue
+* sm_cdm: conformational distance values for the application of the forces on
+the pathogenic mutation site and the secondary site
+* conformational_distance_matrixes: both pm_cdm and sm_cdm
+* scaling_factors: scaling factors used for force magnitudes
+* max_score_perturbed_coordinates: writes a PDB file with the coordinates 
+(after perturbation) of only the structure generated with the best-scoring 
+pair of forces, together with the relative single-force perturbation
+* max_score_fitted_perturbed_coordinates: writes a PDB file with the 
+coordinates (after perturbation and least-square fitting) of only the 
+structure generated with the best-scoring pair of forces, together with the 
+relative single-force perturbation
+* all: all of the above
+
+Naturally, information can only be written to output files if it is present in 
+the HDF5 compressed file to begin with. Notice that some options have meaning
+only if fitting has been performed - meaning that they will return 0-filled 
+arrays or coordinate files if they were not really used in dfs.
+
+Option -p (which is the name of the PDB file used to run dfs) is required only
+if structural data needs to be written.
+
+Option -t, if used, switches the use of .npz file to plain text files, which
+take up more disk space.
+
+Option -d can be used to tune the number of decimal places to be written in
+the file (must be 0 or positive).
+"""
 
 import h5py
 import numpy as np
@@ -101,24 +155,24 @@ def write_data(structure, atoms, atom_indices, d, fmt="%.5f", highest=False, low
 
     if data_type in [DF, DR, F_DR, RAW_SCORES, ref_CD, dfs_CD]:
         if data_type == DF:
-            fname = "force_vectors_%s.npz" % label
+            fname = "force_vectors_%s.%s" % (label, num_ext)
     
         elif data_type == DR:
-            fname = "displacements_%s.npz" % label
+            fname = "displacements_%s.%s" % (label, num_ext)
     
         elif data_type == F_DR:
-            fname = "fitted_displacements_%s.npz" % label
+            fname = "fitted_displacements_%s.%s" % (label, num_ext)
 
         elif data_type == RAW_SCORES:
-            fname = "raw_scores_%s.npz" % label
+            fname = "raw_scores_%s.%s" % (label, num_ext)
 
         elif data_type == ref_CD:
-            fname = "reference_cd_%s.npz" % label
+            fname = "reference_cd_%s.%s" % (label, num_ext)
 
         elif data_type == dfs_CD:
-            fname = "dfs_cd_%s.npz" % label
+            fname = "dfs_cd_%s.%s" % (label, num_ext)
             
-        np.savetxt(fname, data, fmt=fmt)
+        np.savetxt(fname, data, fmt=decimal_fmt)
 
     elif data_type in [P_XYZ, FP_XYZ]:
         if data_type == P_XYZ:
@@ -159,6 +213,7 @@ def write_data(structure, atoms, atom_indices, d, fmt="%.5f", highest=False, low
 if __name__ == "__main__":
 
     import argparse
+    from argparse import RawTextHelpFormatter    
 
     ALL = "all"
     DF = "force_vectors"
@@ -171,8 +226,8 @@ if __name__ == "__main__":
     SCORES = "score_matrix"
     RAW_SCORES = "raw_score_matrix"
     CD = "conformational_distance_matrixes"
-    ref_CD = "reference_cdm"
-    dfs_CD = "dfs_cdm"
+    ref_CD = "pm_cdm"
+    dfs_CD = "sm_cdm"
     SF = "scaling_factors"
     
     data_types =    [
@@ -190,20 +245,48 @@ if __name__ == "__main__":
                         SF
                     ]
 
-    argparser = argparse.ArgumentParser()
-
+    argparser = argparse.ArgumentParser(description=intro,
+                                        epilog=outro,
+                                        formatter_class=RawTextHelpFormatter)
+                                     
     argparser.add_argument("HDF5", type=str, help="input HDF5 file")
-    argparser.add_argument("-p", "--pdb", type=str, dest="PDB", help="initial PDB structure", default=None)
-    argparser.add_argument("-v", "--verbose", dest="verbose", help="toggle verbose mode")
-    argparser.add_argument("-w", "--write", dest="data_types", nargs='*', type=str, choices=data_types, help="Choose which data should be saved in the output file. 'all' (default behaviour) just saves everything.", default=[])
-    #argparser.add_argument("-u", "--highest", dest="highest", default=None, action='store', help="Per run, save a PDB file with the structure having the highest score")
-    #argparser.add_argument("-l", "--lowest", dest="lowest", default=None, action='store', help="Per run, save a PDB file with the structure having the lowest score")
+    argparser.add_argument("-p", "--pdb", type=str, dest="PDB", 
+                           help="Original PDB structure", default=None)
+    argparser.add_argument("-v", "--verbose", dest="verbose", 
+                           help="Toggle verbose mode")
+    argparser.add_argument("-w", "--write", dest="data_types", nargs='*', 
+                           type=str, choices=data_types, help="Choose which\
+                           data should be saved in the output file. 'all' \
+                           just saves everything is available.", 
+                           default=None)
+    argparser.add_argument("-t", "--textual", dest="use_dat", 
+                           default=False, action='store_true', help="Write \
+                           data in simple text format instead of npz when\
+                           possible.")
+    argparser.add_argument("-d", "--decimal", dest="decimal", type=int, 
+                           default=3, action='store', help="Number of decimal\
+                           places to be used in writing files")
 
     args = argparser.parse_args()
 
-    if args.data_types == [] or (ALL in args.data_types):
+    if args.decimal < 0:
+        log.error("Option -d must be 0 or positive. Exiting ...")
+        exit(1)
+
+    decimal_fmt = "%%.%df" % args.decimal
+
+
+    if args.use_dat:
+        num_ext = "dat"
+    else:
+        num_ext = "npz"
+
+    if args.data_types is None:
+        exit(0)
+    elif ALL in args.data_types:
         if len(args.data_types) > 1:
-            log.warning("all was specified in option --write, together with others; all will be used.")
+            log.warning("all was specified in option --write, together with\
+others; all will be used.")
         this_data_types = data_types[1:]
     else:
         this_data_types = args.data_types
@@ -221,11 +304,12 @@ if __name__ == "__main__":
 
     if not args.PDB and not args.data_types:
         exit(0)
+
     sf_path = "/%s" % SF
     if sf_path in hf and SF in this_data_types:
         sf = 1.0/np.array(hf[sf_path])
-	sf_shape = np.int(np.sqrt(sf.shape[1]))
-        np.savetxt("scaling_factors.dat", sf[:,0:sf_shape], fmt="%.5f")
+        sf_shape = np.int(np.sqrt(sf.shape[1]))
+        np.savetxt("scaling_factors.dat", sf[:,0:sf_shape], fmt=decimal_fmt)
         this_data_types.remove(SF)
         
     available_data = hf.attrs['available_data'].split(",")
