@@ -738,12 +738,16 @@ class DFSJob:
         parser = cp.ConfigParser()
         parser.SECTCRE = re.compile(r"\[ *(?P<header>[^]]+?) *\]") # To remove trailing white space error thing
         
-        if config_file is str:        
+        
+        print config_file, "AAAAA"
+        print type(config_file)
+        if type(config_file) is str:   
+            print "ASFILE"
             config_file_stream = open(config_file, 'r')
         else:
+            print "ASSTREAM"
             config_file_stream = config_file
-        
-        
+            
         parser.readfp(config_file_stream)
 
         if parser.has_section(options_section):
