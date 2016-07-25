@@ -22,13 +22,6 @@ except ImportError:
                      'http://numpy.scipy.org\n')
     sys.exit()
 
-try:
-    import prody
-except ImportError:
-    sys.stderr.write('prody is not installed, you can find it at: '
-                     'http://http://prody.csb.pitt.edu\n')
-    sys.exit()
-
 if [int(dgt) for dgt in numpy.__version__.split('.')[:2]] < [1, 4]:
     sys.stderr.write('numpy v1.4 or later is required, you can find it at: '
                      'http://numpy.scipy.org\n')
