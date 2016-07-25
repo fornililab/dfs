@@ -34,7 +34,7 @@ if [int(dgt) for dgt in numpy.__version__.split('.')[:2]] < [1, 4]:
                      'http://numpy.scipy.org\n')
     sys.exit()
 
-__version__ = ''
+__version__ = '0.1'
 
 with open('README.md') as inp:
     long_description = inp.read()
