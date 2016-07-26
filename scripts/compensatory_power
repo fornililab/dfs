@@ -128,12 +128,12 @@ if __name__ == '__main__':
                         occupancies.append(np.float(cutoff_bool[k]))
 
 	if args.pdb_outfile is not None:
-    ls                if args.percentile:
+          if args.percentile:
 		        try:
 			        pd.writePDB(args.pdb_outfile, structure, beta=betas, occupancy=occupancies)
 		        except:
 			        log.error("Couldn't write file %s, Exiting..." % args.pdb_outfile)
-                else:
+          else:
                         try:
                                 pd.writePDB(args.pdb_outfile, structure, beta=betas)
                         except:
