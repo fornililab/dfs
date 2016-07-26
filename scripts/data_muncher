@@ -70,13 +70,19 @@ take up more disk space.
 
 Option -d can be used to tune the number of decimal places to be written in
 the file (must be 0 or positive).
+
+Example:
+
+    data_muncher -w all_available -t -d 3 ../fixed_force_details.h5 \
+    -p ../original.pdb
 """
 
+import os
 import h5py
 import numpy as np
 import logging as log
-import prody as pd
 from dfsutils import *
+import prody
 
 def traverse_tree(fh, current="/", data_types=[]):
     if not data_types:
@@ -135,8 +141,6 @@ def traverse_tree_best(fh, data_type, current="/"):
 
 def write_data(structure, atoms, atom_indices, d, fmt="%.5f", highest=False, lowest=False):
     current, data_type, data = d
-
-    print data_type, 
     
     if current == '/':
         return
@@ -216,15 +220,10 @@ if __name__ == "__main__":
     from argparse import RawTextHelpFormatter    
 
     ALL = "all"
-    DF = "force_vectors"
-    DR = "displacements"
-    F_DR = "displacements_after_fit"
-    P_XYZ = "perturbed_coordinates"
-    FP_XYZ = "fitted_perturbed_coordinates"
+    ALL_AVAILABLE="all_available"
     MAX_SCORE_P_XYZ = "max_score_perturbed_coordinates"
     MAX_SCORE_FP_XYZ = "max_score_fitted_perturbed_coordinates"
     SCORES = "score_matrix"
-    RAW_SCORES = "raw_score_matrix"
     CD = "conformational_distance_matrixes"
     ref_CD = "pm_cdm"
     dfs_CD = "sm_cdm"
@@ -232,6 +231,7 @@ if __name__ == "__main__":
     
     data_types =    [
                         ALL,
+                        ALL_AVAILABLE,
                         DF,
                         DR,
                         F_DR,
@@ -275,6 +275,13 @@ if __name__ == "__main__":
 
     decimal_fmt = "%%.%df" % args.decimal
 
+    try:
+        hf = h5py.File(args.HDF5, 'r')
+    except:
+        log.error("HDF5 file not readable or wrong format. Exiting...")
+        exit(1)
+        
+    available_data = hf.attrs['available_data'].split(",")
 
     if args.use_dat:
         num_ext = "dat"
@@ -288,6 +295,8 @@ if __name__ == "__main__":
             log.warning("all was specified in option --write, together with\
 others; all will be used.")
         this_data_types = data_types[1:]
+    elif ALL_AVAILABLE in data_types:
+        this_data_types = available_data
     else:
         this_data_types = args.data_types
         
@@ -296,7 +305,6 @@ others; all will be used.")
 
     log.basicConfig(level=log.DEBUG)
 
-    hf = h5py.File(args.HDF5, 'r')
 
     print "File %s metadata:" % args.HDF5
     for k,v in hf.attrs.iteritems():
@@ -312,13 +320,13 @@ others; all will be used.")
         np.savetxt("scaling_factors.dat", sf[:,0:sf_shape], fmt=decimal_fmt)
         this_data_types.remove(SF)
         
-    available_data = hf.attrs['available_data'].split(",")
 
     if MAX_SCORE_P_XYZ in this_data_types and (RAW_SCORES not in available_data or P_XYZ not in available_data):
         log.error("%s requires %s and %s to be present in details file. Exiting ..." % (MAX_SCORE_P_XYZ, RAW_SCORES, P_XYZ))
+        exit(1)
     if MAX_SCORE_FP_XYZ in this_data_types and (RAW_SCORES not in available_data or FP_XYZ not in available_data):
         log.error("%s requires %s and %s to be present in details file. Exiting ..." % (MAX_SCORE_FP_XYZ, RAW_SCORES, FP_XYZ))
-
+        exit(1)
     # 1. Parse PDB
     try:
         structure = prody.parsePDB(args.PDB)
