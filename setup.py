@@ -73,7 +73,8 @@ setup(
                  'Topic :: Scientific/Engineering :: Bio-Informatics',
                  'Topic :: Scientific/Engineering :: Chemistry',
                 ],
-    scripts=scripts
+    scripts=scripts,
+    zip_safe=False
     #requires=['NumPy (>=1.7), ProDy'],
     #provides=['DFS ({0:s})'.format(__version__)]
 )
