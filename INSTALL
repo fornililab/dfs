@@ -1,0 +1,59 @@
+Prerequisites
+---------------
+
+dfs is a collection of Python 2 and Cython libraries and scripts and is 
+supported on Linux and OS X/macOS. Installing the dfs package has the following
+requirements:
+
+* Python 2.x (>= 2.7)
+* Cython >= 0.18
+* Python 2 packages: setuptools, numpy
+* Python and numpy headers
+* a C compiler (as gcc)
+
+Running dfs and analysis scripts also requires the following Python 2.x 
+packages:
+
+* h5py >= 2.6.0
+* prody 
+
+Please refer to your system administrator or specific OS documentation for 
+detailed installation instructions of these packages. In Ubuntu 16.04 and other
+Debian-based operating systems they can installed by running:
+
+	sudo apt-get update && sudo apt-get install cython python-dev python-numpy \
+	python-setuptools python-pip python-h5py build-essential
+
+Under OS X and macOS they are easily installed through macports 
+(http://macports.org), by running:
+
+	sudo port selfupdate && sudo port install py27-setuptools py27-numpy \
+	py27-cython py27-pip py27-setuptools py27-h5py
+
+Under OS X, the C compiler can be installed through XCode 
+(http://developer.apple.com). This is also a requirement for installing 
+MacPorts.
+
+Finally, for both operating systems, the prody package can be installed by 
+running:
+
+	pip install --user prody
+
+Installation
+--------------
+
+The dfs package can be installed by running in the dfs installation directory:
+
+	python2.7 setup.py install --user
+
+this will build the Cython/C files as well as copy the installation files in a
+ directory inside the current user's home directory $HOME (usually 
+$HOME/.local/lib/python2.7/site-packages/dfsutils for the library files and 
+$HOME/.local/bin/ for the scripts). It is advisable to add the scripts directory
+in the PATH system variable so that the scripts are available from the whole
+filesystem:
+
+	export PATH=$PATH:$HOME/.local/bin/
+
+this line can also be added to the .profile or .bashrc file in the user's $HOME
+so that it is run every time a shell is opened.
