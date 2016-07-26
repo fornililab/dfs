@@ -21,10 +21,10 @@ import prody as pd
 from prody import LOGGER as log
 
 intro="""Compensatory power calculates the compensatory power index from a .dat
-ASCII matrix file written by the dfs script. The Compensatory power is, per
-every residue i, equal to the number of residues predicted as rescued by 
-residue i normalized by the number of contacts that residue i has in the ANM
-model. The cut-off c is 0 by default."""
+ASCII matrix file written by the dfs script and the original PDB file. 
+Compensatory power is, per every residue i, equal to the number of residues 
+predicted as rescued by residue i normalized by the number of contacts that 
+residue i has in the ANM model."""
 
 outro="""The script requires as arguments i) a .dat matrix file coming from a
 DFS run and ii) the PDB file originally used for the dfs run. You will also need
@@ -33,7 +33,16 @@ the dfs script (which is by default 'name CA'). By default, compensatory power
 is calculated (-t rescue_ability), but it is also possible to calculate the 
 ability of each residue to be compensated in a similar way (-t rescuability).
 Options -c and -d allow to tune the rescuability score cut-off and the distance
-cut-off used to calculate the number of contacts, respectively. Option """
+cut-off used to calculate the number of contacts, respectively. Option -p 
+writes a PDB file with compensatory power written in the b-factor column. If
+option -x N is also specified, the script writes 1 in the occupancy column
+if the correspondent compensatory power value is above or equal to the 
+specified percentile N, and 0 otherwise. N goes from 0 to 100.
+
+Example:
+
+    compensatory_power fixed_force_scores.dat original.pdb -o \
+    normalized_score.dat -p normalized_score.pdb -x 95"""
 
 
 def get_contacts(s, dist_co):
@@ -46,16 +55,16 @@ if __name__ == '__main__':
 
 	import argparse
 
-	parser = argparse.ArgumentParser(description="Calculate \"Rescue ability power\" or \"rescuability power\" index")
+	parser = argparse.ArgumentParser(description=intro, epilog=outro)
 	parser.add_argument(dest="score_matrix", type=str, action='store', help="Score matrix filename")
 	parser.add_argument(dest="pdb", type=str, action='store', help="PDB file filename")
 	parser.add_argument('-t', '--score-type', type=str, dest="type", action='store', choices=["rescue_ability", "rescuability"], default="rescue_ability", help="Use rescue_ability or rescuability (default: rescue_ability)")	
 	parser.add_argument('-s', '--selection-string', dest="sel_string", action='store', type=str, default="name CA", help=("Selection string for the PDB file (default: name CA)"))
-	parser.add_argument('-c','--score-cutoff', dest="score_cutoff", type=float, action='store', default=0.0, help="Cut-off to detect rescuing positions in the matrix (default: 0.0)")
+	parser.add_argument('-c','--score-cutoff', dest="score_cutoff", type=float, action='store', default=0.0, help="Rescuability score cut-off to detect rescuing positions (default: 0.0)")
 	parser.add_argument('-d','--distance-cutoff', dest="distance_cutoff", type=float, action='store', default=15.0, help="Distance cut-off for the contact matrix (A; detault: 15.0)")	
 	parser.add_argument('-o', '--output', type=str, dest="outfile", action='store', default="normalized_score.dat", help="Name for the output file (default: normalized_score.dat)")
 	parser.add_argument('-p', '--pdb-output', type=str, dest="pdb_outfile", action='store', default=None, help="Name for the output PDB file (default: don't save)")
-	parser.add_argument('-x', '--pdb-percentile-output', type=float, dest="percentile", action='store', default=None, help="Percentile values to be written in occupancy column")
+	parser.add_argument('-x', '--pdb-percentile-output', type=float, dest="percentile", action='store', default=None, help="Percentile value to point out top compensatory residues (0 to 100)")
 
 
 	args = parser.parse_args()
@@ -119,7 +128,7 @@ if __name__ == '__main__':
                         occupancies.append(np.float(cutoff_bool[k]))
 
 	if args.pdb_outfile is not None:
-                if args.percentile:
+    ls                if args.percentile:
 		        try:
 			        pd.writePDB(args.pdb_outfile, structure, beta=betas, occupancy=occupancies)
 		        except:
