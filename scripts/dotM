@@ -1,0 +1,211 @@
+#!/usr/bin/env python
+# dotM - calculate RMSIP between dfs displacements and normal modes.
+# Copyright (C) 2015 Matteo Tiberti <matteo.tiberti@gmail.com>
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/li.censes/>.
+
+
+import numpy as np
+import prody as pd
+import h5py
+import argparse
+import logging as log
+from dfsutils import P_XYZ, FP_XYZ, DR, F_DR, RAW_SCORES
+
+intro = """dotM calculates the Root Mean Square Inner Product (RMSIP) between
+the modes calculated from the ANM and the displacement vectors calculated by 
+DFS for a given pair of residue and force directions. The RMSIP is a measure of 
+overlap between the two different sets of vectors and ranges from 0 to 1, where 
+1 indicates perfectly superimposable sets.
+"""
+
+outro="""The script requires as input i) one details HDF5 file written by the 
+main dfs script and ii) the original unperturbed PDB file that was given to dfs
+as input. There's no need to specify the parameters for the ANM model on which
+normal modes are calculated, as they are read from the HDF5 file. As displace-
+ments are calculated by forces acting on the pathogenic mutation site and on 
+the potential compensatory mutation site, the script requires to select which
+residues have to be considered with options -R and -D. Residues can be 
+specified either by a number, thus selecting residues according to the consecu-
+tive ordering of residues in the PDB file, or through a string containing PDB 
+chain and numbering (for instance, A34 for residue 34 of chain A). As for every 
+pair of residues a number of forces having different directions are applied, 
+these need to be selected as well, using options -r and -d, that accept either 
+a number from 0 to N-1, where N is the number of directions defined in the HDF5 
+file, or the keywords "max" or "min" to select the direction of forces that 
+give rise to the maximum or the minimum score respectively. Option -n allows to
+define the number of modes for which the RMSIP is calculated. Option -t allows
+to select which dataset has to be considered from the HDF5 file, between the 
+atomic displacements (%s or %s).
+
+The results are printed in the standard output, and consist both of the RMSIP 
+value and of the inner product between each single mode and the 
+displacement vector.
+
+A typical command line for this script goes like:
+
+    dotM fixed_force_details.h5 original.pdb -R A5 -D A10 -r 1 -d 5 -t %s
+""" % (P_XYZ, FP_XYZ, P_XYZ)
+
+min_s = "min"
+max_s = "max"
+
+def tupleize(a,b,matrix):
+    return ( np.array([a]), np.array([b]) )
+
+def where_max(a,b,matrix):
+    return np.where(matrix == np.max(matrix))
+
+def where_min(a,b,matrix):
+    return np.where(matrix == np.min(matrix))
+
+if __name__ == "__main__":
+
+    parser = argparse.ArgumentParser(description=intro, epilog=outro)
+    parser.add_argument("h5_fname", type=str, help="HDF5 details file from a DFS calculation")
+    parser.add_argument("original_pdb", type=str, help="Original unperturbed PDB file")
+    parser.add_argument("-R", dest="reference_residue", type=str, default=None, 
+help="Pathogenic mutation site")
+    parser.add_argument("-D", dest="dfs_residue", type=str, default=None, 
+help="Secondary site")
+    parser.add_argument("-r", dest="r_score", default=max_s, type=str, 
+help="Direction of the force on the pathogenic mutation site")
+    parser.add_argument("-d", dest="d_score", default=max_s, type=str, 
+help="Direction of the force on the secondary site")
+    parser.add_argument("-n", dest="n_modes", help="number of modes", 
+default=10, type=int)
+    parser.add_argument("-t", dest="data_type", help="data type to be used for\
+the calculation of displacements", default=P_XYZ, choices=(P_XYZ, FP_XYZ))
+
+    args = parser.parse_args()
+
+    s = pd.parsePDB(args.original_pdb)
+
+    pairs = []
+
+    if args.reference_residue.isdigit():
+        ref_r = args.reference_residue
+    else:
+        ref_r_sel = s.select("chain %s and resnum %s and name CA" % (args.reference_residue[0],
+                                                                     args.reference_residue[1:])).getResindices()
+        assert(ref_r_sel.shape[0] == 1)
+        ref_r_sel_n = ref_r_sel[0]
+
+    if args.dfs_residue.isdigit():
+        dfs_r = args.dfs_residue
+    else:
+        dfs_r_sel = s.select("chain %s and resnum %s and name CA" % (args.dfs_residue[0],
+                                                                 args.dfs_residue[1:])).getResindices()
+        assert(dfs_r_sel.shape[0] == 1)
+        dfs_r_sel_n = dfs_r_sel[0]
+
+    pairs = [(ref_r_sel_n, dfs_r_sel_n)]
+
+    h5_fname = args.h5_fname
+    n_modes = int(args.n_modes)
+
+    if str.isdigit(args.r_score):
+        args.r_score = int(args.r_score)
+    if str.isdigit(args.d_score):
+        args.d_score = int(args.d_score)
+
+    r_d_idx = [args.r_score, args.d_score]
+
+    if min_s in r_d_idx and max_s in r_d_idx:
+        log.error("you can't ask for maximum and minimum at the same time.")
+        exit(1)
+
+    if args.r_score == max_s or args.d_score == max_s:
+        func = where_max
+    elif args.r_score == min_s or args.d_score == min_s:
+        func = where_min
+    else:
+        func = tupleize
+
+    fh = h5py.File(h5_fname, 'r')
+
+    gamma = fh.attrs["gamma"]
+    cutoff = fh.attrs["cutoff"]
+    
+    anm = pd.ANM()
+    anm.buildHessian(s, gamma=gamma, cutoff=cutoff)
+    anm.calcModes(n_modes=n_modes)
+    ev = anm.getEigvecs()
+    ds = ev.T.reshape((ev.shape[1],len(s),3))
+
+    num_forces = 12
+
+    pms = []
+    rm = []
+    pos = []
+    neg = []
+    rescued_pms = []
+    otherwise_positive = []
+    negative = []
+    all_cases = []
+
+    for pair in pairs:
+        path = "/%s/%s/" % (pair[0], pair[1])
+        path_ref = "/%s/" % (pair[0])
+
+        this_coords = np.array(fh[path][args.data_type])
+        ref_coords  = np.array(fh[path_ref][args.data_type])
+
+        this_rs = np.array(fh[path][RAW_SCORES])
+
+        n_elms = int(np.sqrt(this_rs.shape[0]))
+
+        where = func(args.r_score, args.d_score, this_rs)
+        where_idx = where[0][0]*n_elms + where[1][0]
+
+        s_ref = s.copy()
+        s_dfs = s.copy()
+
+        s_ref.setCoords(ref_coords[where_idx])
+        s_dfs.setCoords(this_coords[where_idx])
+
+        selection = "name CA " + " and ".join(["(not resindex %s)"%x for x in pair[0:2]])
+
+        sel_ref = s_ref.select(selection)
+        sel_dfs = s_dfs.select(selection)
+        s_sel =   s.select(selection)
+
+        t = pd.calcTransformation(sel_ref, s_sel)
+        t_ref = pd.applyTransformation(t, s_ref)
+
+        t = pd.calcTransformation(sel_dfs, s_sel)
+        t_dfs = pd.applyTransformation(t, s_dfs)
+
+        displacements = t_dfs.getCoords() - t_ref.getCoords()
+
+        norm_displacements = displacements / np.linalg.norm(displacements)
+
+        this_sum = 0
+
+        vals = []
+
+        for i,m in enumerate(ds):
+            this_val = np.dot(norm_displacements.flatten(), m.flatten())**2
+            vals.append(np.sqrt(this_val))
+            this_sum += this_val
+
+        rmsip = np.sqrt(this_sum)
+
+        print "Residues %s-%d%s, %s-%d%s, score %.3f; RMSIP is %.3f" % ( s[pair[0]].getChid(), s[pair[0]].getResnum(), s[pair[0]].getResname(),
+                                                                         s[pair[1]].getChid(), s[pair[1]].getResnum(), s[pair[1]].getResname(),
+                                                                         this_rs[where],
+                                                                         rmsip )
+
+        for i,v in enumerate(vals):
+            print "\tMode %i: %.3f" % (i,v)
