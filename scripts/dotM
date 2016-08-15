@@ -21,6 +21,7 @@ import prody as pd
 import h5py
 import argparse
 import logging as log
+from itertools import product
 from dfsutils import P_XYZ, FP_XYZ, DR, F_DR, RAW_SCORES
 
 intro = """dotM calculates the Root Mean Square Inner Product (RMSIP) between
@@ -92,25 +93,38 @@ the calculation of displacements", default=P_XYZ, choices=(P_XYZ, FP_XYZ))
 
     s = pd.parsePDB(args.original_pdb)
 
-    pairs = []
-
+    print "AA"
     if args.reference_residue.isdigit():
-        ref_r = args.reference_residue
+        ref_r_sel = [args.reference_residue]
     else:
-        ref_r_sel = s.select("chain %s and resnum %s and name CA" % (args.reference_residue[0],
+        if len(args.reference_residue.strip().split()) == 1 and args.reference_residue[0].isalpha() \
+        and args.reference_residue[0].isupper() and args.reference_residue[1:].lstrip("-").isdigit():
+            ref_r_sel = s.select("chain %s and resnum %s and name CA" % (args.reference_residue[0],
                                                                      args.reference_residue[1:])).getResindices()
-        assert(ref_r_sel.shape[0] == 1)
-        ref_r_sel_n = ref_r_sel[0]
+            assert(ref_r_sel.shape[0] == 1)
 
+        else:
+            try:
+                ref_r_sel = s.select(args.reference_residue).getResindices()
+            except: 
+                log.error("Selection string for pathogenic mutation sites is wrong. Exiting...")            
+
+    print "BB"
     if args.dfs_residue.isdigit():
-        dfs_r = args.dfs_residue
+        dfs_r_sel = [args.dfs_residue]
     else:
-        dfs_r_sel = s.select("chain %s and resnum %s and name CA" % (args.dfs_residue[0],
+        if len(args.dfs_residue.strip().split()) == 1 and args.dfs_residue[0].isalpha() \
+        and args.dfs_residue[0].isupper() and args.dfs_residue[1:].lstrip("-").isdigit():
+            dfs_r_sel = s.select("chain %s and resnum %s and name CA" % (args.dfs_residue[0],
                                                                  args.dfs_residue[1:])).getResindices()
-        assert(dfs_r_sel.shape[0] == 1)
-        dfs_r_sel_n = dfs_r_sel[0]
+            assert(dfs_r_sel.shape[0] == 1)
+        else:
+            try:
+                dfs_r_sel = s.select(args.reference_residue).getResindices()
+            except: 
+                log.error("Selection string for secondary mutation sites is wrong. Exiting...")
 
-    pairs = [(ref_r_sel_n, dfs_r_sel_n)]
+    pairs = product(ref_r_sel, dfs_r_sel)
 
     h5_fname = args.h5_fname
     n_modes = int(args.n_modes)
@@ -147,12 +161,12 @@ the calculation of displacements", default=P_XYZ, choices=(P_XYZ, FP_XYZ))
     num_forces = 12
 
     pms = []
-    rm = []
+    rm  = []
     pos = []
     neg = []
     rescued_pms = []
     otherwise_positive = []
-    negative = []
+    negative  = []
     all_cases = []
 
     for pair in pairs:
