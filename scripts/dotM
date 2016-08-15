@@ -26,9 +26,11 @@ from dfsutils import P_XYZ, FP_XYZ, DR, F_DR, RAW_SCORES
 
 intro = """dotM calculates the Root Mean Square Inner Product (RMSIP) between
 the modes calculated from the ANM and the displacement vectors calculated by 
-DFS for a given pair of residue and force directions. The RMSIP is a measure of 
-overlap between the two different sets of vectors and ranges from 0 to 1, where 
-1 indicates perfectly superimposable sets.
+DFS for a given pair of residue and force directions. (i.e. the displacements
+obtained by the difference of coordinates between a structure in which
+two forces are applied and a structure in which a single force is applied).
+The RMSIP is a measure of overlap between the two different sets of vectors
+ and ranges from 0 to 1, where 1 indicates perfectly superimposable sets.
 """
 
 outro="""The script requires as input i) one details HDF5 file written by the 
@@ -37,11 +39,18 @@ as input. There's no need to specify the parameters for the ANM model on which
 normal modes are calculated, as they are read from the HDF5 file. As displace-
 ments are calculated by forces acting on the pathogenic mutation site and on 
 the potential compensatory mutation site, the script requires to select which
-residues have to be considered with options -R and -D. Residues can be 
+residues have to be considered with options -R and -D. Single residues can be 
 specified either by a number, thus selecting residues according to the consecu-
 tive ordering of residues in the PDB file, or through a string containing PDB 
-chain and numbering (for instance, A34 for residue 34 of chain A). As for every 
-pair of residues a number of forces having different directions are applied, 
+chain and numbering (for instance, A34 for residue 34 of chain A). Multiple
+residues both for -D and -R can be selected by supplying selection strings
+in prody style. In this case, all the possible combinations of -R and -D
+residues are considered. Specifying the same residues for -R and -D will not
+be very meaningful, as the displacement vector should be 0; however, in most
+cases, as the .h5 file written by dfs uses a lossy compression scheme, very 
+small but non-zero differences are to be expected, resulting in a finite
+(but not really meaningful) value  of RMSIP.
+As for every pair of residues a number of forces having different directions are applied, 
 these need to be selected as well, using options -r and -d, that accept either 
 a number from 0 to N-1, where N is the number of directions defined in the HDF5 
 file, or the keywords "max" or "min" to select the direction of forces that 
@@ -125,8 +134,6 @@ the calculation of displacements", default=P_XYZ, choices=(P_XYZ, FP_XYZ))
                 log.error("Selection string for secondary mutation sites is wrong. Exiting...")
 
     pairs = product(ref_r_sel, dfs_r_sel)
-
-
     
     h5_fname = args.h5_fname
     n_modes = int(args.n_modes)
