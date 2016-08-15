@@ -93,9 +93,9 @@ the calculation of displacements", default=P_XYZ, choices=(P_XYZ, FP_XYZ))
 
     s = pd.parsePDB(args.original_pdb)
 
-    print "AA"
     if args.reference_residue.isdigit():
-        ref_r_sel = [args.reference_residue]
+        #ref_r_sel = s.select("protein and resindex %s and name CA" % args.reference_residue)
+        ref_r_sel = np.array([int(args.reference_residue)])
     else:
         if len(args.reference_residue.strip().split()) == 1 and args.reference_residue[0].isalpha() \
         and args.reference_residue[0].isupper() and args.reference_residue[1:].lstrip("-").isdigit():
@@ -109,9 +109,9 @@ the calculation of displacements", default=P_XYZ, choices=(P_XYZ, FP_XYZ))
             except: 
                 log.error("Selection string for pathogenic mutation sites is wrong. Exiting...")            
 
-    print "BB"
     if args.dfs_residue.isdigit():
-        dfs_r_sel = [args.dfs_residue]
+        #dfs_r_sel = s.select("protein and resindex %s and name CA" % args.dfs_residue)
+        dfs_r_sel = np.array([int(args.dfs_residue)])
     else:
         if len(args.dfs_residue.strip().split()) == 1 and args.dfs_residue[0].isalpha() \
         and args.dfs_residue[0].isupper() and args.dfs_residue[1:].lstrip("-").isdigit():
@@ -120,12 +120,14 @@ the calculation of displacements", default=P_XYZ, choices=(P_XYZ, FP_XYZ))
             assert(dfs_r_sel.shape[0] == 1)
         else:
             try:
-                dfs_r_sel = s.select(args.reference_residue).getResindices()
+                dfs_r_sel = s.select(args.dfs_residue).getResindices()
             except: 
                 log.error("Selection string for secondary mutation sites is wrong. Exiting...")
 
     pairs = product(ref_r_sel, dfs_r_sel)
 
+
+    
     h5_fname = args.h5_fname
     n_modes = int(args.n_modes)
 
