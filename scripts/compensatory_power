@@ -21,23 +21,25 @@ import prody as pd
 from prody import LOGGER as log
 
 intro="""Compensatory power calculates the compensatory power index from a .dat
-ASCII matrix file written by the dfs script and the original PDB file. 
-Compensatory power is, per every residue i, equal to the number of residues 
-predicted as rescued by residue i normalized by the number of contacts that 
+ASCII matrix file written by the dfs script and the original PDB file.
+Compensatory power is, per every residue i, equal to the number of residues
+predicted as rescued by residue i normalized by the number of contacts that
 residue i has in the ANM model."""
 
-outro="""The script requires as arguments i) a .dat matrix file coming from a
-DFS run and ii) the PDB file originally used for the dfs run. You will also need
-to provide the same selection string (-s option) that has been provided to 
-the dfs script (which is by default 'name CA'). By default, compensatory power
-is calculated (-t rescue_ability), but it is also possible to calculate the 
-ability of each residue to be compensated in a similar way (-t rescuability).
-Options -c and -d allow to tune the rescuability score cut-off and the distance
-cut-off used to calculate the number of contacts, respectively. Option -p 
-writes a PDB file with compensatory power written in the b-factor column. If
-option -x N is also specified, the script writes 1 in the occupancy column
-if the correspondent compensatory power value is above or equal to the 
-specified percentile N, and 0 otherwise. N goes from 0 to 100.
+outro="""The script requires as arguments i) the PDB file originally used for 
+a dfs run, as well as the same selection string (-s option) that has been 
+provided to the dfs script (which is by default 'name CA'), and ii) one or more
+.dat matrix files coming from a DFS run. If more then one file are provided, 
+the different matrices will be averaged and the score will be calculated on the
+average matrix. By default, compensatory poweris calculated (-t rescue_ability), 
+but it is also possible to calculate the ability of each residue to be 
+compensated in a similar way (-t rescuability). Options -c and -d allow to tune
+the rescuability score cut-off and the distance cut-off used to calculate the 
+number of contacts, respectively. Option -p writes a PDB file with compensatory
+power written in the b-factor column. If option -x N is also specified, the 
+script writes 1 in the occupancy column if the correspondent compensatory power
+value is above or equal to the specified percentile N, and 0 otherwise. N goes 
+from 0 to 100.
 
 Example:
 
@@ -46,98 +48,100 @@ Example:
 
 
 def get_contacts(s, dist_co):
-	return np.sum(pd.buildDistMatrix(s) <= dist_co, axis=0, dtype=np.float)-1
+    return np.sum(pd.buildDistMatrix(s) <= dist_co, axis=0, dtype=np.float)-1
 
 def get_raw_index(m, score_co, axis=0):
-	return np.sum(m >= score_co, axis=axis, dtype=np.float)
+    return np.sum(m >= score_co, axis=axis, dtype=np.float)
 
 if __name__ == '__main__':
 
-	import argparse
+    import argparse
 
-	parser = argparse.ArgumentParser(description=intro, epilog=outro)
-	parser.add_argument(dest="score_matrix", type=str, action='store', help="Score matrix filename")
-	parser.add_argument(dest="pdb", type=str, action='store', help="PDB file filename")
-	parser.add_argument('-t', '--score-type', type=str, dest="type", action='store', choices=["rescue_ability", "rescuability"], default="rescue_ability", help="Use rescue_ability or rescuability (default: rescue_ability)")	
-	parser.add_argument('-s', '--selection-string', dest="sel_string", action='store', type=str, default="name CA", help=("Selection string for the PDB file (default: name CA)"))
-	parser.add_argument('-c','--score-cutoff', dest="score_cutoff", type=float, action='store', default=0.0, help="Rescuability score cut-off to detect rescuing positions (default: 0.0)")
-	parser.add_argument('-d','--distance-cutoff', dest="distance_cutoff", type=float, action='store', default=15.0, help="Distance cut-off for the contact matrix (A; detault: 15.0)")	
-	parser.add_argument('-o', '--output', type=str, dest="outfile", action='store', default="normalized_score.dat", help="Name for the output file (default: normalized_score.dat)")
-	parser.add_argument('-p', '--pdb-output', type=str, dest="pdb_outfile", action='store', default=None, help="Name for the output PDB file (default: don't save)")
-	parser.add_argument('-x', '--pdb-percentile-output', type=float, dest="percentile", action='store', default=None, help="Percentile value to point out top compensatory residues (0 to 100)")
+    parser = argparse.ArgumentParser(description=intro, epilog=outro)
+    parser.add_argument(dest="pdb", type=str, action='store', help="PDB file filename")
+    parser.add_argument(dest="score_matrix", type=str, action='store', nargs='+', help="Score matrix filename(s)")
+    parser.add_argument('-t', '--score-type', type=str, dest="type", action='store', choices=["rescue_ability", "rescuability"], default="rescue_ability", help="Use rescue_ability or rescuability (default: rescue_ability)")
+    parser.add_argument('-s', '--selection-string', dest="sel_string", action='store', type=str, default="name CA", help=("Selection string for the PDB file (default: name CA)"))
+    parser.add_argument('-c','--score-cutoff', dest="score_cutoff", type=float, action='store', default=0.0, help="Rescuability score cut-off to detect rescuing positions (default: 0.0)")
+    parser.add_argument('-d','--distance-cutoff', dest="distance_cutoff", type=float, action='store', default=15.0, help="Distance cut-off for the contact matrix (A; detault: 15.0)")
+    parser.add_argument('-o', '--output', type=str, dest="outfile", action='store', default="normalized_score.dat", help="Name for the output file (default: normalized_score.dat)")
+    parser.add_argument('-p', '--pdb-output', type=str, dest="pdb_outfile", action='store', default=None, help="Name for the output PDB file (default: don't save)")
+    parser.add_argument('-x', '--pdb-percentile-output', type=float, dest="percentile", action='store', default=None, help="Percentile value to point out top compensatory residues (0 to 100)")
 
 
-	args = parser.parse_args()
+    args = parser.parse_args()
 
-	if args.type == 'rescue_ability':
-		axis = 0
-	else:
-		axis = 1
+    if args.type == 'rescue_ability':
+        axis = 0
+    else:
+        axis = 1
 
-	try: 
-		score_matrix = np.loadtxt(args.score_matrix)
-	except IOError:
-		log.error("Matrix file not found or not readable. Exiting...")
-		exit(1)
-	except ValueError:
-		log.error("Matrix file is in the wrong format. Exiting...")
-		exit(1)
-	
-	structure = pd.parsePDB(args.pdb)
+    matrices = []
+    print args.score_matrix
+    for mat in args.score_matrix:
+        try:
+            matrices.append(np.loadtxt(mat))
+        except IOError:
+            log.error("Matrix file not found or not readable. Exiting...")
+            exit(1)
+        except ValueError:
+            log.error("Matrix file is in the wrong format. Exiting...")
+            exit(1)
+    
+    score_matrix = np.average(matrices, axis=0)
 
-	if structure is None:
-		log.error("Matrix file not found or not readable. Exiting...")
+    structure = pd.parsePDB(args.pdb)
 
-	try:
-		selection = structure.select(args.sel_string)
-	except pd.SelectionError:
-		log.error("The selection string is not valid. Exiting...")
+    if structure is None:
+        log.error("Matrix file not found or not readable. Exiting...")
 
-	contacts = get_contacts(selection, args.distance_cutoff)
+    try:
+        selection = structure.select(args.sel_string)
+    except pd.SelectionError:
+        log.error("The selection string is not valid. Exiting...")
 
-	raw_index = get_raw_index(score_matrix, args.score_cutoff, axis=axis)
+    contacts = get_contacts(selection, args.distance_cutoff)
 
-	ra_power = raw_index/contacts
+    raw_index = get_raw_index(score_matrix, args.score_cutoff, axis=axis)
 
-	try:
-		np.savetxt(args.outfile, ra_power, fmt="%.3f")
-	except:
-		log.error("Couldn't write file %s, Exiting..." % args.outfile)
+    ra_power = raw_index/contacts
 
-	res_indices = [ a.getResindex() for a in structure]
-	
-	betas = []
-	this_i = -1
-	k = -1
-	for i,idx in enumerate(res_indices):
-		if idx != this_i:
-			k += 1
-			this_i = idx
-		betas.append(ra_power[k])
+    try:
+        np.savetxt(args.outfile, ra_power, fmt="%.3f")
+    except:
+        log.error("Couldn't write file %s, Exiting..." % args.outfile)
+
+    res_indices = [ a.getResindex() for a in structure]
+
+    betas = []
+    this_i = -1
+    k = -1
+    for i,idx in enumerate(res_indices):
+        if idx != this_i:
+            k += 1
+            this_i = idx
+        betas.append(ra_power[k])
 
         if args.percentile:
-	        this_i = -1
-        	k = -1
-                occupancies = []
-                cutoff = np.percentile(ra_power, args.percentile, interpolation='midpoint')
-                cutoff_bool = ra_power >= cutoff
-                for i,idx in enumerate(res_indices):
-                        if idx != this_i:
-                                k += 1
-                                this_i = idx
-                        occupancies.append(np.float(cutoff_bool[k]))
+            this_i = -1
+            k = -1
+            occupancies = []
+            cutoff = np.percentile(ra_power, args.percentile, interpolation='midpoint')
+            cutoff_bool = ra_power >= cutoff
+            for i,idx in enumerate(res_indices):
+                if idx != this_i:
+                    k += 1
+                    this_i = idx
+                occupancies.append(np.float(cutoff_bool[k]))
 
-	if args.pdb_outfile is not None:
-          if args.percentile:
-		        try:
-			        pd.writePDB(args.pdb_outfile, structure, beta=betas, occupancy=occupancies)
-		        except:
-			        log.error("Couldn't write file %s, Exiting..." % args.pdb_outfile)
-          else:
-                        try:
-                                pd.writePDB(args.pdb_outfile, structure, beta=betas)
-                        except:
-                                log.error("Couldn't write file %s, Exiting..." % args.pdb_outfile)
-
-
-
+    if args.pdb_outfile is not None:
+        if args.percentile:
+            try:
+                pd.writePDB(args.pdb_outfile, structure, beta=betas, occupancy=occupancies)
+            except:
+                log.error("Couldn't write file %s, Exiting..." % args.pdb_outfile)
+        else:
+            try:
+                pd.writePDB(args.pdb_outfile, structure, beta=betas)
+            except:
+                log.error("Couldn't write file %s, Exiting..." % args.pdb_outfile)
