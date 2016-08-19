@@ -97,6 +97,8 @@ help="Direction of the force on the secondary site")
 default=10, type=int)
     parser.add_argument("-t", dest="data_type", help="data type to be used for\
 the calculation of displacements", default=P_XYZ, choices=(P_XYZ, FP_XYZ))
+    parser.add_argument("-o", dest="output_file", help="name of text output\
+file", default="rmsip.txt")
 
     args = parser.parse_args()
 
@@ -193,7 +195,8 @@ the calculation of displacements", default=P_XYZ, choices=(P_XYZ, FP_XYZ))
     anm.calcModes(n_modes=n_modes)
     ev = anm.getEigvecs()
     ds = ev.T.reshape((ev.shape[1],len(s),3))
-
+    
+    #XXX make not hardcoded!
     num_forces = 12
 
     pms = []
@@ -204,6 +207,12 @@ the calculation of displacements", default=P_XYZ, choices=(P_XYZ, FP_XYZ))
     otherwise_positive = []
     negative  = []
     all_cases = []
+
+    try:
+        out_fh = open(args.output_file, 'w')
+    except:
+        log.error("Couldn't write file %s; exiting..." % args.output_file)
+        
 
     for pair in pairs:
         path = "/%s/%s/" % (pair[0], pair[1])
@@ -252,10 +261,10 @@ the calculation of displacements", default=P_XYZ, choices=(P_XYZ, FP_XYZ))
 
         rmsip = np.sqrt(this_sum)
 
-        print "Residues %s-%d%s, %s-%d%s, score %.3f; RMSIP is %.3f" % ( s[pair[0]].getChid(), s[pair[0]].getResnum(), s[pair[0]].getResname(),
+        out_fh.write("Residues %s-%d%s, %s-%d%s, score %.3f; RMSIP is %.3f\n" % ( s[pair[0]].getChid(), s[pair[0]].getResnum(), s[pair[0]].getResname(),
                                                                          s[pair[1]].getChid(), s[pair[1]].getResnum(), s[pair[1]].getResname(),
                                                                          this_rs[where],
-                                                                         rmsip )
+                                                                         rmsip ))
 
         for i,v in enumerate(vals):
-            print "\tMode %i: %.3f" % (i,v)
+            out_fh.write("\tMode %i: %.3f\n" % (i,v))
