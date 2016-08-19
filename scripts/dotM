@@ -108,15 +108,29 @@ the calculation of displacements", default=P_XYZ, choices=(P_XYZ, FP_XYZ))
     else:
         if len(args.reference_residue.strip().split()) == 1 and args.reference_residue[0].isalpha() \
         and args.reference_residue[0].isupper() and args.reference_residue[1:].lstrip("-").isdigit():
-            ref_r_sel = s.select("chain %s and resnum %s and name CA" % (args.reference_residue[0],
-                                                                     args.reference_residue[1:])).getResindices()
-            assert(ref_r_sel.shape[0] == 1)
+            ref_r_sel_o = s.select("chain %s and resnum %s and name CA" % (args.reference_residue[0],
+                                                                     args.reference_residue[1:]))
+            if ref_r_sel_o is None:
+                ref_r_sel = []
+            else:
+                ref_r_sel = np.array(ref_r_sel_o.getResindices())
+            
+            if len(ref_r_sel) > 1:
+                log.error("Residue %s%s has more than one CA! Exiting.." % (args.reference_residue[0],\
+                                                                     args.reference_residue[1:]))
+                exit(1)
+            
 
         else:
             try:
                 ref_r_sel = s.select(args.reference_residue).getResindices()
             except: 
                 log.error("Selection string for pathogenic mutation sites is wrong. Exiting...")            
+                
+    if len(ref_r_sel) < 1:
+        log.error("Couldn't find any residue in PDB file that matches option -R. Exiting...")
+        exit(1)
+        
 
     if args.dfs_residue.isdigit():
         #dfs_r_sel = s.select("protein and resindex %s and name CA" % args.dfs_residue)
@@ -124,14 +138,27 @@ the calculation of displacements", default=P_XYZ, choices=(P_XYZ, FP_XYZ))
     else:
         if len(args.dfs_residue.strip().split()) == 1 and args.dfs_residue[0].isalpha() \
         and args.dfs_residue[0].isupper() and args.dfs_residue[1:].lstrip("-").isdigit():
-            dfs_r_sel = s.select("chain %s and resnum %s and name CA" % (args.dfs_residue[0],
-                                                                 args.dfs_residue[1:])).getResindices()
-            assert(dfs_r_sel.shape[0] == 1)
+            dfs_r_sel_o = s.select("chain %s and resnum %s and name CA" % (args.dfs_residue[0],
+                                                                 args.dfs_residue[1:]))
+            if dfs_r_sel_o is None:
+                dfs_r_sel = []
+            else:
+                dfs_r_sel = np.array(dfs_r_sel_o.getResindices())
+
+            if len(dfs_r_sel) > 1:
+                log.error("Residue %s%s has more than one CA! Exiting.." % (args.dfs_residue[0],\
+                                                                     args.dfs_residue[1:]))
+                exit(1)
         else:
             try:
                 dfs_r_sel = s.select(args.dfs_residue).getResindices()
             except: 
                 log.error("Selection string for secondary mutation sites is wrong. Exiting...")
+                
+
+    if len(dfs_r_sel) < 1:
+        log.error("Couldn't find any residue in PDB file that matches option -D. Exiting...")
+        exit(1)
 
     pairs = product(ref_r_sel, dfs_r_sel)
     
