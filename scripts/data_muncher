@@ -1,6 +1,6 @@
 #! /usr/bin/env python
-# data_muncher.py - Write data in .h5 files from DFS runs in easily readable formats
-# Copyright (C) 2015 Matteo Tiberti <matteo.tiberti@gmail.com>
+# data_muncher.py - Write data in .h5 files from DFS runs in easily readable 
+# formats Copyright (C) 2015 Matteo Tiberti <matteo.tiberti@gmail.com>
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -81,7 +81,7 @@ import os
 import h5py
 import numpy as np
 import logging as log
-from dfsutils import *
+from dfsutils import DF, DR, F_DR, RAW_SCORES, P_XYZ, FP_XYZ
 import prody
 
 def traverse_tree(fh, current="/", data_types=[]):
@@ -108,7 +108,6 @@ def traverse_tree_best(fh, data_type, current="/"):
         raise TypeError
 
     this_keys = filter(unicode.isdigit, fh[current].keys())
-
 
     for key in this_keys:
         for t in traverse_tree_best(fh,
@@ -224,7 +223,6 @@ if __name__ == "__main__":
     MAX_SCORE_P_XYZ = "max_score_perturbed_coordinates"
     MAX_SCORE_FP_XYZ = "max_score_fitted_perturbed_coordinates"
     SCORES = "score_matrix"
-    CD = "conformational_distance_matrixes"
     ref_CD = "pm_cdm"
     dfs_CD = "sm_cdm"
     SF = "scaling_factors"
@@ -239,7 +237,6 @@ if __name__ == "__main__":
                         FP_XYZ,
                         SCORES,
                         RAW_SCORES,
-                        CD,
                         MAX_SCORE_P_XYZ,
                         MAX_SCORE_FP_XYZ,
                         SF
@@ -252,8 +249,6 @@ if __name__ == "__main__":
     argparser.add_argument("HDF5", type=str, help="input HDF5 file")
     argparser.add_argument("-p", "--pdb", type=str, dest="PDB", 
                            help="Original PDB structure", default=None)
-    argparser.add_argument("-v", "--verbose", dest="verbose", 
-                           help="Toggle verbose mode")
     argparser.add_argument("-w", "--write", dest="data_types", nargs='*', 
                            type=str, choices=data_types, help="Choose which\
                            data should be saved in the output file. 'all' \
@@ -280,6 +275,11 @@ if __name__ == "__main__":
     except:
         log.error("HDF5 file not readable or wrong format. Exiting...")
         exit(1)
+
+    print "File %s metadata:" % args.HDF5
+    for k,v in hf.attrs.iteritems():
+        k += ":"
+        print "\t%s%s" %  (k.ljust(23),v)
         
     available_data = hf.attrs['available_data'].split(",")
 
@@ -300,24 +300,14 @@ others; all will be used.")
     else:
         this_data_types = args.data_types
         
-    if CD in this_data_types:
-        this_data_types.extend([ref_CD, dfs_CD])
-
     log.basicConfig(level=log.DEBUG)
 
-
-    print "File %s metadata:" % args.HDF5
-    for k,v in hf.attrs.iteritems():
-        print "\t%s\t\t:%s" % (k,v)
-
-    if not args.PDB and not args.data_types:
-        exit(0)
-
     sf_path = "/%s" % SF
+
     if sf_path in hf and SF in this_data_types:
         sf = 1.0/np.array(hf[sf_path])
         sf_shape = np.int(np.sqrt(sf.shape[1]))
-        np.savetxt("scaling_factors.dat", sf[:,0:sf_shape], fmt=decimal_fmt)
+        np.savetxt("scaling_factors.%s" % num_ext, sf[:,0:sf_shape], fmt=decimal_fmt)
         this_data_types.remove(SF)
         
 
@@ -327,34 +317,34 @@ others; all will be used.")
     if MAX_SCORE_FP_XYZ in this_data_types and (RAW_SCORES not in available_data or FP_XYZ not in available_data):
         log.error("%s requires %s and %s to be present in details file. Exiting ..." % (MAX_SCORE_FP_XYZ, RAW_SCORES, FP_XYZ))
         exit(1)
-    # 1. Parse PDB
-    try:
-        structure = prody.parsePDB(args.PDB)
-    except:
-        log.error("Couldn't parse your model file (%s); Exiting..." % args.PDB)
-        exit(1)
 
-    # 2. select atoms for building the model
-    try:
-        atoms = structure.select(hf.attrs['atom_selection'])
+    # 1. Parse PDB (if required)
+    if P_XYZ in this_data_types or FP_XYZ in this_data_types or MAX_SCORE_P_XYZ in this_data_types or MAX_SCORE_FP_XYZ in this_data_types:
+        if not args.PDB:
+            log.error("You need to specify a PDB file to write structure-based information. Exiting...")
+            exit(1)
+        else:
+            try:
+                structure = prody.parsePDB(args.PDB)
+            except:
+                log.error("Couldn't parse your model file (%s); Exiting..." % args.PDB)
+                exit(1)
 
-    except prody.SelectionError:
-        log.error("Your selection string was invalid. Exiting...")
-        exit(1)
-    if not atoms:
-        log.error("Your selection string resulted in no atoms being selected in your structure. Exiting...")
-        exit(1)
-    if len(atoms) < 2:
-        log.error("Your selection string resulted in less than two atoms being selected in your structure. Exiting...")
-        exit(1)
+        # 2. select atoms for building the model
+        try:
+            atoms = structure.select(hf.attrs['atom_selection'])
+    
+        except prody.SelectionError:
+            log.error("Your selection string was invalid. Exiting...")
+            exit(1)
+        if not atoms:
+            log.error("Your selection string resulted in no atoms being selected in your structure. Exiting...")
+            exit(1)
+        if len(atoms) < 2:
+            log.error("Your selection string resulted in less than two atoms being selected in your structure. Exiting...")
+            exit(1)
 
     atom_indices = atoms.getResindices()
-
-    if P_XYZ in this_data_types:
-        p_structures = prody.Ensemble()
-
-    if FP_XYZ in this_data_types:
-        fp_structures = prody.Ensemble()
 
     if MAX_SCORE_P_XYZ in this_data_types:
         for d in traverse_tree_best(hf, data_type = MAX_SCORE_P_XYZ):
@@ -371,5 +361,3 @@ others; all will be used.")
     if this_data_types:
         for d in traverse_tree(hf, data_types = this_data_types):
             write_data(structure, atoms, atom_indices, d)
-
-
