@@ -15,24 +15,18 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/li.censes/>.
 
-import prody
+import prody as pd
 from prody import SelectionError
 from dfsutils import *
 from dfsutils.libdfs import _get_drmsd
 import argparse
 from argparse import RawTextHelpFormatter
-import logging as log
+from prody import LOGGER as log
 import numpy as np
-import ConfigParser as cp
-import re
-import itertools
-import collections
-import multiprocessing as mp
 import time
 import socket
 import getpass
 import os
-import traceback
 import StringIO
 
 
@@ -224,7 +218,8 @@ if __name__ == "__main__":
                         selection should contain at most one CA atom per \
                         residue.")
     parser.add_argument("-v", "--verbose", dest="verbose", 
-                        help="toggle verbose mode")
+                        help="toggle verbose mode", action='store_true',
+                        default=False)
     parser.add_argument("-c", "--cutoff", dest="anm_cutoff", default=15.0, \
                         type=float, help="Distance cut-off for generating the \
                         topology of ANM (in A; default is 15.0)")
@@ -299,11 +294,13 @@ if __name__ == "__main__":
                         dest="exclude_sites", action='store_false', 
                         default=True, help="Include force application sites \
                         in the calculation of scores (by default it doesn't)")
-    #XXX add option: number of normal modes
-
-    log.basicConfig(level=log.DEBUG)
 
     args = parser.parse_args()
+    
+    if args.verbose:
+        pd.confProDy(verbosity='info')
+    else:
+        pd.confProDy(verbosity='warning')    
 
     if args.output_fname is None:
         do_write = None
@@ -322,7 +319,7 @@ if __name__ == "__main__":
 
     # 1. Parse PDB
     try:
-        structure = prody.parsePDB(args.PDB)
+        structure = pd.parsePDB(args.PDB)
     except:
         log.error("Couldn't parse your model file (%s); Exiting..." % args.PDB)
         exit(1)
@@ -369,7 +366,7 @@ if __name__ == "__main__":
             assert(hessian.shape[0] == 3*len(atoms))
             log.warning("Hessian has been loaded from file; therefore gamma and cut-off options will be ignored.")
 
-        anm = prody.dynamics.ANM(atoms)
+        anm = pd.dynamics.ANM(atoms)
 
         # Build Hessian
 

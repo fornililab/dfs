@@ -20,9 +20,9 @@ import numpy as np
 import prody as pd
 import h5py
 import argparse
-import logging as log
+from prody import LOGGER as log
 from itertools import product
-from dfsutils import P_XYZ, FP_XYZ, DR, F_DR, RAW_SCORES
+from dfsutils import P_XYZ, FP_XYZ, RAW_SCORES
 
 intro = """dotM calculates the Root Mean Square Inner Product (RMSIP) between
 the modes calculated from the ANM and the displacement vectors calculated by 
@@ -101,6 +101,8 @@ the calculation of displacements", default=P_XYZ, choices=(P_XYZ, FP_XYZ))
 file", default="rmsip.txt")
 
     args = parser.parse_args()
+
+    pd.confProDy(verbosity='warning')
 
     s = pd.parsePDB(args.original_pdb)
 

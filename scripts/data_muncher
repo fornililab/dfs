@@ -79,7 +79,7 @@ Example:
 
 import h5py
 import numpy as np
-import logging as log
+from prody import LOGGER as log
 from dfsutils import DF, DR, F_DR, RAW_SCORES, P_XYZ, FP_XYZ
 import prody as pd
 from itertools import product
@@ -258,7 +258,7 @@ if __name__ == "__main__":
 
     args = argparser.parse_args()
 
-    pd.confProDy(verbosity='error')
+    pd.confProDy(verbosity='warning')
     #pd.LOGGER._logger.setLevel(logging.WARNING)
 
     # open details file
