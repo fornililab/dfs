@@ -82,7 +82,8 @@ import h5py
 import numpy as np
 import logging as log
 from dfsutils import DF, DR, F_DR, RAW_SCORES, P_XYZ, FP_XYZ
-import prody
+import prody as pd
+#import logging
 
 def traverse_tree(fh, current="/", data_types=[]):
     if not data_types:
@@ -184,14 +185,14 @@ def write_data(structure, atoms, atom_indices, d, fmt="%.5f", highest=False, low
         elif data_type == FP_XYZ:
             fname = "fitted_displaced_structures_%s.dcd" % label
 
-        ensemble = prody.Ensemble()
+        ensemble = pd.Ensemble()
 
         lendata = int(np.sqrt(len(data)))    
         for i in range(lendata):
             for j in range(lendata):
                 ensemble.addCoordset(data[j*lendata+i])
 
-        prody.writeDCD(fname, ensemble)
+        pd.writeDCD(fname, ensemble)
 
     elif data_type in [MAX_SCORE_P_XYZ, MAX_SCORE_FP_XYZ]:
 
@@ -209,8 +210,8 @@ def write_data(structure, atoms, atom_indices, d, fmt="%.5f", highest=False, low
         this_structure_ref.setCoords(data[0])
         this_structure.setCoords(data[1])
 
-        prody.writePDB(fname_ref, this_structure_ref)
-        prody.writePDB(fname, this_structure)
+        pd.writePDB(fname_ref, this_structure_ref)
+        pd.writePDB(fname, this_structure)
 
 
 if __name__ == "__main__":
@@ -264,6 +265,9 @@ if __name__ == "__main__":
 
     args = argparser.parse_args()
 
+    pd.confProDy(verbosity='error')
+    #pd.LOGGER._logger.setLevel(logging.WARNING)
+
     if args.decimal < 0:
         log.error("Option -d must be 0 or positive. Exiting ...")
         exit(1)
@@ -295,10 +299,11 @@ if __name__ == "__main__":
             log.warning("all was specified in option --write, together with\
 others; all will be used.")
         this_data_types = data_types[1:]
-    elif ALL_AVAILABLE in data_types:
+    elif ALL_AVAILABLE in args.data_types:
         this_data_types = available_data
     else:
         this_data_types = args.data_types
+    print this_data_types
         
     log.basicConfig(level=log.DEBUG)
 
@@ -319,30 +324,30 @@ others; all will be used.")
         exit(1)
 
     # 1. Parse PDB (if required)
+
     if P_XYZ in this_data_types or FP_XYZ in this_data_types or MAX_SCORE_P_XYZ in this_data_types or MAX_SCORE_FP_XYZ in this_data_types:
         if not args.PDB:
             log.error("You need to specify a PDB file to write structure-based information. Exiting...")
             exit(1)
-        else:
-            try:
-                structure = prody.parsePDB(args.PDB)
-            except:
-                log.error("Couldn't parse your model file (%s); Exiting..." % args.PDB)
-                exit(1)
+    try:
+        structure = pd.parsePDB(args.PDB)
+    except:
+        log.error("Couldn't parse your model file (%s); Exiting..." % args.PDB)
+        exit(1)
 
         # 2. select atoms for building the model
-        try:
-            atoms = structure.select(hf.attrs['atom_selection'])
+    try:
+        atoms = structure.select(hf.attrs['atom_selection'])
     
-        except prody.SelectionError:
-            log.error("Your selection string was invalid. Exiting...")
-            exit(1)
-        if not atoms:
-            log.error("Your selection string resulted in no atoms being selected in your structure. Exiting...")
-            exit(1)
-        if len(atoms) < 2:
-            log.error("Your selection string resulted in less than two atoms being selected in your structure. Exiting...")
-            exit(1)
+    except pd.SelectionError:
+        log.error("Your selection string was invalid. Exiting...")
+        exit(1)
+    if not atoms:
+        log.error("Your selection string resulted in no atoms being selected in your structure. Exiting...")
+        exit(1)
+    if len(atoms) < 2:
+        log.error("Your selection string resulted in less than two atoms being selected in your structure. Exiting...")
+        exit(1)
 
     atom_indices = atoms.getResindices()
 
