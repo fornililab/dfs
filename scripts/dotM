@@ -83,8 +83,13 @@ def where_min(a,b,matrix):
 if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(description=intro, epilog=outro)
-    parser.add_argument("h5_fname", type=str, help="HDF5 details file from a DFS calculation")
-    parser.add_argument("original_pdb", type=str, help="Original unperturbed PDB file")
+    required_options = parser.add_argument_group('required options')
+
+    required_options.add_argument("-f", "--details", type=str, dest="h5_fname",
+                        help="HDF5 details\ file from a DFS calculation", required=True)
+    required_options.add_argument("-p", "--pdb", dest="original_pdb", type=str, 
+                                  help="Original unperturbed PDB file", required=True)
+                                  
     parser.add_argument("-R", dest="reference_residue", type=str, default=None, 
 help="Pathogenic mutation site")
     parser.add_argument("-D", dest="dfs_residue", type=str, default=None, 
@@ -123,8 +128,6 @@ file", default="rmsip.txt")
                 log.error("Residue %s%s has more than one CA! Exiting.." % (args.reference_residue[0],\
                                                                      args.reference_residue[1:]))
                 exit(1)
-            
-
         else:
             try:
                 ref_r_sel = s.select(args.reference_residue).getResindices()
@@ -158,8 +161,6 @@ file", default="rmsip.txt")
                 dfs_r_sel = s.select(args.dfs_residue).getResindices()
             except: 
                 log.error("Selection string for secondary mutation sites is wrong. Exiting...")
-                
-
     if len(dfs_r_sel) < 1:
         log.error("Couldn't find any residue in PDB file that matches option -D. Exiting...")
         exit(1)
@@ -197,9 +198,6 @@ file", default="rmsip.txt")
     anm.calcModes(n_modes=n_modes)
     ev = anm.getEigvecs()
     ds = ev.T.reshape((ev.shape[1],len(s),3))
-    
-    #XXX make not hardcoded!
-    num_forces = 12
 
     pms = []
     rm  = []

@@ -58,14 +58,17 @@ if __name__ == '__main__':
     import argparse
 
     parser = argparse.ArgumentParser(description=intro, epilog=outro)
-    parser.add_argument(dest="pdb", type=str, action='store', help="PDB file filename")
-    parser.add_argument(dest="score_matrix", type=str, action='store', nargs='+', help="Score matrix filename(s)")
+    required_options = parser.add_argument_group('required options')                                     
+    
+    required_options.add_argument("-p", "--pdb", dest="pdb", type=str, action='store', help="PDB file filename", required=True)
+
+    parser.add_argument("-m", "--score-matrix", dest="score_matrix", type=str, action='store', nargs='+', help="Score matrix filename(s)", required=True)
     parser.add_argument('-t', '--score-type', type=str, dest="type", action='store', choices=["rescue_ability", "rescuability"], default="rescue_ability", help="Use rescue_ability or rescuability (default: rescue_ability)")
     parser.add_argument('-s', '--selection-string', dest="sel_string", action='store', type=str, default="name CA", help=("Selection string for the PDB file (default: name CA)"))
     parser.add_argument('-c','--score-cutoff', dest="score_cutoff", type=float, action='store', default=0.0, help="Rescuability score cut-off to detect rescuing positions (default: 0.0)")
     parser.add_argument('-d','--distance-cutoff', dest="distance_cutoff", type=float, action='store', default=15.0, help="Distance cut-off for the contact matrix (A; detault: 15.0)")
     parser.add_argument('-o', '--output', type=str, dest="outfile", action='store', default="normalized_score.dat", help="Name for the output file (default: normalized_score.dat)")
-    parser.add_argument('-p', '--pdb-output', type=str, dest="pdb_outfile", action='store', default=None, help="Name for the output PDB file (default: don't save)")
+    parser.add_argument('-P', '--pdb-output', type=str, dest="pdb_outfile", action='store', default=None, help="Name for the output PDB file (default: don't save)")
     parser.add_argument('-x', '--pdb-percentile-output', type=float, dest="percentile", action='store', default=None, help="Percentile value to point out top compensatory residues (0 to 100)")
 
 

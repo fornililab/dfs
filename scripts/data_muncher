@@ -235,10 +235,12 @@ if __name__ == "__main__":
     argparser = argparse.ArgumentParser(description=intro,
                                         epilog=outro,
                                         formatter_class=RawTextHelpFormatter)
+    required_options = argparser.add_argument_group('required options')                                                                             
                                      
-    argparser.add_argument("HDF5", type=str, help="input HDF5 file")
-    argparser.add_argument("-p", "--pdb", type=str, dest="PDB", 
-                           help="Original PDB structure", default=None)
+    required_options.add_argument("-f", "--details", dest="HDF5", type=str, help="input HDF5 file", required=True)
+    required_options.add_argument("-p", "--pdb", type=str, dest="PDB", 
+                           help="Original PDB structure", default=None, required=True)
+
     argparser.add_argument("-w", "--write", dest="data_types", nargs='*', 
                            type=str, choices=data_types, help="Choose which\
                            data should be saved in the output file. 'all' \
