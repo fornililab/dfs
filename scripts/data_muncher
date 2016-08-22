@@ -77,77 +77,68 @@ Example:
     -p ../original.pdb
 """
 
-import os
 import h5py
 import numpy as np
 import logging as log
 from dfsutils import DF, DR, F_DR, RAW_SCORES, P_XYZ, FP_XYZ
 import prody as pd
-#import logging
+from itertools import product
 
-def traverse_tree(fh, current="/", data_types=[]):
-    if not data_types:
-        yield None
-        return
 
-    this_keys = filter(unicode.isdigit, fh[current].keys())
 
-    for key in this_keys:
-        for t in traverse_tree(fh, current=os.path.join(current,key), data_types=data_types):
-            yield t
-
-    for d in data_types:
-        if d in fh[current].keys():
-            yield (current, d, np.array(fh[current][d]))
-
-def traverse_tree_best(fh, data_type, current="/"):
+def get_data_from_pairs(fh, pairs, data_types=[]):
+    for pair in pairs:
+        if pair[1]is None:
+            current = "/%d/" % pair[0]
+        else:
+            current = "/%d/%d/" % (pair[0], pair[1])
+        for d in data_types:
+            if d in fh[current].keys():
+                yield (current, d, np.array(fh[current][d]))
+    
+def get_data_from_pairs_best(fh, pairs, data_type):
     if data_type == MAX_SCORE_FP_XYZ:
         coord_type = FP_XYZ
     elif data_type == MAX_SCORE_P_XYZ:
         coord_type = P_XYZ
-    else:
-        raise TypeError
 
-    this_keys = filter(unicode.isdigit, fh[current].keys())
-
-    for key in this_keys:
-        for t in traverse_tree_best(fh,
-                                    data_type = data_type,
-                                    current=os.path.join(current,key)):
-            yield t
-
-    try:
-        this_rs = np.array(fh[current][RAW_SCORES])
-    except:
-        yield None
-        return
-
-    current_ref = current.split("/")[1]
-
-    this_coords_ref = np.array(fh[current_ref][coord_type])
-    this_coords = np.array(fh[current][coord_type])
-
-    n_elms = int(np.sqrt(this_coords.shape[0]))
-
-    where = np.array(np.where(this_rs == np.max(this_rs)))
-    where_idx = where[0][0]*n_elms + where[1][0]
-
-    max_coords = this_coords[where_idx,:,:]
-    ref_max_coords = this_coords_ref[where_idx,:,:]
-
-    all_coords = np.array([ref_max_coords, max_coords])
-
-    yield (current, data_type, all_coords)
+        for pair in pairs:
+            if pair[1]is None:
+                current = "/%d/" % pair[0]
+            else:
+                current = "/%d/%d/" % (pair[0], pair[1])
+    
+            try:
+                this_rs = np.array(fh[current][RAW_SCORES])
+            except:
+                yield None
+                return
+    
+            current_ref = current.split("/")[1]
+    
+            this_coords_ref = np.array(fh[current_ref][coord_type])
+            this_coords = np.array(fh[current][coord_type])
+    
+            n_elms = int(np.sqrt(this_coords.shape[0]))
+    
+            where = np.array(np.where(this_rs == np.max(this_rs)))
+            where_idx = where[0][0]*n_elms + where[1][0]
+    
+            max_coords = this_coords[where_idx,:,:]
+            ref_max_coords = this_coords_ref[where_idx,:,:]
+    
+            all_coords = np.array([ref_max_coords, max_coords])
+    
+            yield (current, data_type, all_coords)
 
 def write_data(structure, atoms, atom_indices, d, fmt="%.5f", highest=False, lowest=False):
+
     current, data_type, data = d
-    
+    print current
     if current == '/':
         return
-
-    this_idxs = map(int, current.split("/")[1:])
-    #print np.where(atom_indices==this_idxs[0])[0]
-    #print atoms.getIndices()[np.where(atom_indices==idx)[0]
+    
+    this_idxs = map(int, filter(lambda x: x != '', current.split("/")))
     
     idx_matching = []
     for idx in this_idxs:
@@ -213,7 +204,6 @@ def write_data(structure, atoms, atom_indices, d, fmt="%.5f", highest=False, low
         pd.writePDB(fname_ref, this_structure_ref)
         pd.writePDB(fname, this_structure)
 
-
 if __name__ == "__main__":
 
     import argparse
@@ -262,11 +252,113 @@ if __name__ == "__main__":
     argparser.add_argument("-d", "--decimal", dest="decimal", type=int, 
                            default=3, action='store', help="Number of decimal\
                            places to be used in writing files")
+    argparser.add_argument("-R", dest="reference_residue", type=str, default="protein and name CA", 
+                           help="Pathogenic mutation site")
+    argparser.add_argument("-D", dest="dfs_residue", type=str, default="protein and name CA", 
+                           help="Secondary site")
 
     args = argparser.parse_args()
 
     pd.confProDy(verbosity='error')
     #pd.LOGGER._logger.setLevel(logging.WARNING)
+
+    # open details file
+    try:
+        fh = h5py.File(args.HDF5, 'r')
+    except:
+        log.error("HDF5 file not readable or wrong format. Exiting...")
+        exit(1)
+
+    # parse PDB and get structure
+    try:
+        structure = pd.parsePDB(args.PDB)
+    except:
+        log.error("Couldn't parse your model file (%s); Exiting..." % args.PDB)
+        exit(1)
+
+    # select atoms for building the model
+    try:
+        atoms = structure.select(fh.attrs['atom_selection'])
+    
+    except pd.SelectionError:
+        log.error("Your selection string in the HDF5 file was invalid. Exiting...")
+        exit(1)
+    if not atoms:
+        log.error("Your selection string resulted in no atoms being selected in your structure. Exiting...")
+        exit(1)
+    if len(atoms) < 2:
+        log.error("Your selection string resulted in less than two atoms being selected in your structure. Exiting...")
+        exit(1)
+
+    # decision tree for determining residue pairs
+    if args.reference_residue.isdigit():
+        ref_r_sel = np.array([int(args.reference_residue)])
+    else:
+        if len(args.reference_residue.strip().split()) == 1 and args.reference_residue[0].isalpha() \
+        and args.reference_residue[0].isupper() and args.reference_residue[1:].lstrip("-").isdigit():
+            ref_r_sel_o = structure.select("chain %s and resnum %s and name CA" % (args.reference_residue[0],
+                                                                     args.reference_residue[1:]))
+            if ref_r_sel_o is None:
+                ref_r_sel = []
+            else:
+                ref_r_sel = np.array(ref_r_sel_o.getResindices())
+            
+            if len(ref_r_sel) > 1:
+                log.error("Residue %s%s has more than one CA! Exiting.." % (args.reference_residue[0],\
+                                                                     args.reference_residue[1:]))
+                exit(1)
+        else:
+            try:
+                ref_r_sel = structure.select(args.reference_residue).getResindices()
+            except: 
+                log.error("Selection string for pathogenic mutation sites is wrong. Exiting...")            
+    if len(ref_r_sel) < 1:
+        log.error("Couldn't find any residue in PDB file that matches option -R. Exiting...")
+        exit(1)
+    
+    if args.dfs_residue.strip() == "none":
+        dfs_r_sel = np.array([None])
+    elif args.dfs_residue.isdigit():
+        dfs_r_sel = np.array([int(args.dfs_residue)])
+    else:
+        if len(args.dfs_residue.strip().split()) == 1 and args.dfs_residue[0].isalpha() \
+        and args.dfs_residue[0].isupper() and args.dfs_residue[1:].lstrip("-").isdigit():
+            dfs_r_sel_o = structure.select("chain %s and resnum %s and name CA" % (args.dfs_residue[0],
+                                                                 args.dfs_residue[1:]))
+            if dfs_r_sel_o is None:
+                dfs_r_sel = []
+            else:
+                dfs_r_sel = np.array(dfs_r_sel_o.getResindices())
+
+            if len(dfs_r_sel) > 1:
+                log.error("Residue %s%s has more than one CA! Exiting.." % (args.dfs_residue[0],\
+                                                                     args.dfs_residue[1:]))
+                exit(1)
+        else:
+            try:
+                dfs_r_sel = structure.select(args.dfs_residue).getResindices()
+            except: 
+                log.error("Selection string for secondary mutation sites is wrong. Exiting...")
+    if len(dfs_r_sel) < 1 and dfs_r_sel:
+        log.error("Couldn't find any residue in PDB file that matches option -D. Exiting...")
+
+        data_types =    [
+                        ALL,
+                        ALL_AVAILABLE,
+                        DF,
+                        DR,
+                        F_DR,
+                        P_XYZ,
+                        FP_XYZ,
+                        SCORES,
+                        RAW_SCORES,
+                        MAX_SCORE_P_XYZ,
+                        MAX_SCORE_FP_XYZ,
+                        SF
+                    ]
+
+
+    pairs = list(product(ref_r_sel, dfs_r_sel))
 
     if args.decimal < 0:
         log.error("Option -d must be 0 or positive. Exiting ...")
@@ -274,18 +366,12 @@ if __name__ == "__main__":
 
     decimal_fmt = "%%.%df" % args.decimal
 
-    try:
-        hf = h5py.File(args.HDF5, 'r')
-    except:
-        log.error("HDF5 file not readable or wrong format. Exiting...")
-        exit(1)
-
     print "File %s metadata:" % args.HDF5
-    for k,v in hf.attrs.iteritems():
+    for k,v in fh.attrs.iteritems():
         k += ":"
         print "\t%s%s" %  (k.ljust(23),v)
         
-    available_data = hf.attrs['available_data'].split(",")
+    available_data = fh.attrs['available_data'].split(",")
 
     if args.use_dat:
         num_ext = "dat"
@@ -303,19 +389,21 @@ others; all will be used.")
         this_data_types = available_data
     else:
         this_data_types = args.data_types
-    print this_data_types
-        
-    log.basicConfig(level=log.DEBUG)
 
+    if (dfs_r_sel == np.array([None])).any() and (RAW_SCORES in this_data_types or 
+    MAX_SCORE_P_XYZ in this_data_types or MAX_SCORE_FP_XYZ in this_data_types):
+        log.error("some of the selected data types are only supported for two \
+or more residues (change option -D). Exiting...")
+        exit(1)
+        
     sf_path = "/%s" % SF
 
-    if sf_path in hf and SF in this_data_types:
-        sf = 1.0/np.array(hf[sf_path])
+    if sf_path in fh and SF in this_data_types:
+        sf = 1.0/np.array(fh[sf_path])
         sf_shape = np.int(np.sqrt(sf.shape[1]))
         np.savetxt("scaling_factors.%s" % num_ext, sf[:,0:sf_shape], fmt=decimal_fmt)
         this_data_types.remove(SF)
         
-
     if MAX_SCORE_P_XYZ in this_data_types and (RAW_SCORES not in available_data or P_XYZ not in available_data):
         log.error("%s requires %s and %s to be present in details file. Exiting ..." % (MAX_SCORE_P_XYZ, RAW_SCORES, P_XYZ))
         exit(1)
@@ -323,46 +411,20 @@ others; all will be used.")
         log.error("%s requires %s and %s to be present in details file. Exiting ..." % (MAX_SCORE_FP_XYZ, RAW_SCORES, FP_XYZ))
         exit(1)
 
-    # 1. Parse PDB (if required)
-
-    if P_XYZ in this_data_types or FP_XYZ in this_data_types or MAX_SCORE_P_XYZ in this_data_types or MAX_SCORE_FP_XYZ in this_data_types:
-        if not args.PDB:
-            log.error("You need to specify a PDB file to write structure-based information. Exiting...")
-            exit(1)
-    try:
-        structure = pd.parsePDB(args.PDB)
-    except:
-        log.error("Couldn't parse your model file (%s); Exiting..." % args.PDB)
-        exit(1)
-
-        # 2. select atoms for building the model
-    try:
-        atoms = structure.select(hf.attrs['atom_selection'])
-    
-    except pd.SelectionError:
-        log.error("Your selection string was invalid. Exiting...")
-        exit(1)
-    if not atoms:
-        log.error("Your selection string resulted in no atoms being selected in your structure. Exiting...")
-        exit(1)
-    if len(atoms) < 2:
-        log.error("Your selection string resulted in less than two atoms being selected in your structure. Exiting...")
-        exit(1)
-
     atom_indices = atoms.getResindices()
 
     if MAX_SCORE_P_XYZ in this_data_types:
-        for d in traverse_tree_best(hf, data_type = MAX_SCORE_P_XYZ):
-            if d:
+        for d in get_data_from_pairs_best(fh, pairs, data_type=MAX_SCORE_P_XYZ):
+            if d is not None:
                 write_data(structure, atoms, atom_indices, d, highest=True, lowest=False)
         this_data_types.remove(MAX_SCORE_P_XYZ)
 
-    if MAX_SCORE_FP_XYZ in this_data_types:
-        for d in traverse_tree_best(hf, data_type = MAX_SCORE_FP_XYZ):
-            if d:
+    if MAX_SCORE_FP_XYZ in this_data_types:        
+        for d in get_data_from_pairs_best(fh, pairs, data_type=MAX_SCORE_FP_XYZ):
+            if d is not None:
                 write_data(structure, atoms, atom_indices, d, highest=True, lowest=False)
         this_data_types.remove(MAX_SCORE_FP_XYZ)                
 
     if this_data_types:
-        for d in traverse_tree(hf, data_types = this_data_types):
+        for d in get_data_from_pairs(fh, pairs, data_types = this_data_types):
             write_data(structure, atoms, atom_indices, d)
