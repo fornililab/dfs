@@ -39,10 +39,10 @@ extensions = [
 
 packages = ['dfsutils']
 
-scripts = ['scripts/dfs',
-           'scripts/compensatory_power',
-           'scripts/data_muncher',
-           'scripts/dotM']
+scripts = ['scripts_src/dfs',
+           'scripts_src/compensatory_power',
+           'scripts_src/data_muncher',
+           'scripts_src/dotM']
 
 
 
