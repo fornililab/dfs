@@ -16,13 +16,16 @@ as analyzing the results.
 
 The following scripts are included in the package:
 
-	* dfs - the main program, used to run calculations using the DFS method
-	* compensatory_power - calculate per-residue compensatory power index
-	* data_muncher - write data from details HDF5 file to more common formats
-	* enrichment - calculate enrichment matrices for dfs 
+    * dfs - the main program, used to run calculations using the DFS method
+    * compensatory_power - calculate per-residue compensatory power index
+    * data_muncher - write data from details HDF5 file to more common formats
+    * dotM - calculate RMSIP between vector spaces from DFS
 
-each script has a comprehensive help section including examples, that is 
-available by running
+Please check the files in the "doc" directory for relevant 
+documentation and instructions for each script. A tutorial is also included.
+Each script also hes a summary help section which is accessible by running:
 
-	script --help .
+	script --help 
+
+Happy simulating!
 
