@@ -1,0 +1,694 @@
+#LyX 2.2 created this file. For more info see http://www.lyx.org/
+\lyxformat 508
+\begin_document
+\begin_header
+\save_transient_properties true
+\origin unavailable
+\textclass article
+\use_default_options true
+\maintain_unincluded_children false
+\language english
+\language_package default
+\inputencoding auto
+\fontencoding global
+\font_roman "default" "default"
+\font_sans "default" "default"
+\font_typewriter "default" "default"
+\font_math "auto" "auto"
+\font_default_family default
+\use_non_tex_fonts false
+\font_sc false
+\font_osf false
+\font_sf_scale 100 100
+\font_tt_scale 100 100
+\graphics default
+\default_output_format default
+\output_sync 0
+\bibtex_command default
+\index_command default
+\paperfontsize default
+\use_hyperref false
+\papersize default
+\use_geometry false
+\use_package amsmath 1
+\use_package amssymb 1
+\use_package cancel 1
+\use_package esint 1
+\use_package mathdots 1
+\use_package mathtools 1
+\use_package mhchem 1
+\use_package stackrel 1
+\use_package stmaryrd 1
+\use_package undertilde 1
+\cite_engine basic
+\cite_engine_type default
+\biblio_style plain
+\use_bibtopic false
+\use_indices false
+\paperorientation portrait
+\suppress_date false
+\justification true
+\use_refstyle 1
+\index Index
+\shortcut idx
+\color #008000
+\end_index
+\secnumdepth 3
+\tocdepth 3
+\paragraph_separation indent
+\paragraph_indentation default
+\quotes_language english
+\papercolumns 1
+\papersides 1
+\paperpagestyle default
+\tracking_changes false
+\output_changes false
+\html_math_output 0
+\html_css_as_file 0
+\html_be_strict false
+\end_header
+
+\begin_body
+
+\begin_layout Title
+Dual Force Scanning
+\end_layout
+
+\begin_layout Author
+Matteo Tiberti, Alessandro Pandini, Franca Fraternali, Arianna Fornili*
+\end_layout
+
+\begin_layout Section
+Introduction
+\end_layout
+
+\begin_layout Section
+Scripts
+\end_layout
+
+\begin_layout Standard
+This section introduces each script in the dfs package, with detailed descriptio
+n of the available options and of the expected outputs.
+\end_layout
+
+\begin_layout Subsection
+dfs
+\end_layout
+
+\begin_layout Standard
+The dfs script is the main script of the collection.
+ Its purpose is to use the DFS method as described in [REF PAPER] to generate
+ Rescuability score matrices and accessory data.
+ 
+\end_layout
+
+\begin_layout Standard
+The method uses forces applied through Linear Response Theory on Anisotropic
+ Network Models (ANM) to calculate a rescuability score R between pairs
+ of residues, one that is considered a Pathogenic Mutation (PM) to be compensate
+d and another that is a Secondary Mutation site, which represents a potential
+ compensatory site.
+ Positive values of R indicate a compensatory effect.
+ By default, every residue is tested against each other both as a PM and
+ as a SM; the outcome is a NxN matrix of rescuability score, where N is
+ the number of residues.
+ By default all pairs are calculated.
+\end_layout
+
+\begin_layout Standard
+Running with the default options, dfs just requires a single PDB input file.
+ It is strongly advised to edit the PDB file so that it contains only the
+ atoms that will be used in the calculation (i.e.
+ the CA atoms of each residue), in order to remove possible spurious "CA"
+ atoms (as for instance calcium ions or atoms from cofactors) that would
+ be otherwise considered as protein residues by the software.
+\end_layout
+
+\begin_layout Standard
+After this, running dfs is just a matter of:
+\end_layout
+
+\begin_layout Standard
+./dfs -p input.pdb
+\end_layout
+
+\begin_layout Standard
+The DFS method can be run in two variants: one in which all the forces are
+ kept with the same magnitude (fixed force) and the other in which magnitues
+ are changed as to obtain constant displacements (fixed displacements).
+ Both of them are run by default one after the other and thus the software
+ return two ASCII .dat matrix files containing one or the other, and named
+ accordingly.
+\end_layout
+
+\begin_layout Standard
+The following description will describe more in details how the dfs script
+ works and the serval options involved in tuning its behaviour.
+\end_layout
+
+\begin_layout Subsubsection
+Anisotropic network model
+\end_layout
+
+\begin_layout Standard
+dfs is based on applying forces to amongs belonging to an anisotropic network
+ model [ref].
+ This model is defined upon the coordinates of the alpha carbon atoms of
+ the protein structure, which are supplied in a PDB file, a distance cut-off
+ that defines if two atoms are connected by an harmonic potential and a
+ value gamma that defines the stiffness constant of the harmonic potential.
+ The atoms from the PDB file that take part in the ANM can be selected with
+ option 
+\series bold
+-s
+\series default
+, using ProDy selection strings (for more details see http://prody.csb.pitt.edu/man
+ual/reference/atomic/select.html); default is 
+\begin_inset Quotes eld
+\end_inset
+
+name CA
+\begin_inset Quotes erd
+\end_inset
+
+, i.e.
+ select all atoms that are called 
+\begin_inset Quotes eld
+\end_inset
+
+CA
+\begin_inset Quotes erd
+\end_inset
+
+ in the PDB file.
+ Notice that the ANM model is designed so that only alpha carbons should
+ be considered.
+ The distance cut-off can be changed with option 
+\series bold
+-c
+\series default
+ (A; default is 15.0) and gamma can be changed with option 
+\series bold
+-g
+\series default
+ (UNIT; default is 0.1).
+ 
+\end_layout
+
+\begin_layout Standard
+Once the ANM has been built, its hessian matrix is calculated, which is
+ required for the next steps of the DFS protocol, and saved to file with
+ option 
+\series bold
+-m
+\series default
+, as an ASCII matrix text file.
+ Otherwise, the hessian matrix itself can be supplied with option 
+\series bold
+-M
+\series default
+, in which case it will not be calculated from the model (the same ASCII
+ matrix file format is supported).
+\end_layout
+
+\begin_layout Standard
+Upon the hessian, the covariance matrix (i.e.
+ its inverse) is calculated.
+ As with the hessian matrix, it is possible to save the covariance matrix
+ with option 
+\series bold
+-i
+\series default
+ and load it from file instead of calculating it from the model using option
+ 
+\series bold
+-I
+\series default
+.
+ Notice that if -I is provided, the calculation or loading of the hessian
+ matrix will not be performed.
+\end_layout
+
+\begin_layout Subsubsection
+Definition of the forces to be applied
+\end_layout
+
+\begin_layout Standard
+Then, according to the DFS protocol, a number of forces are applied to the
+ protein structure.
+ For a given pair of protein residues forces will be applied two times:
+ in one case forces will be applied on the site representing a pathogenic
+ mutation (pathogenic mutation site or PMS) alone, and then forces will
+ be applied both at the PM site and at a secondary site representing a secondary
+ mutation (secondary mutation site or SMS) using linear response theory.
+ Therefore we need todefine i) number of forces that need to be applied
+ for each PM or SM ii) their direction iii) their magnitude.
+ These parameters can be set through configuration files as detailed in
+ the examples directory.
+ It should be noted that, according to our tests, the score values converge
+ already with 12 force application when their direction is generated with
+ the Fibonacci lattice approach, which is the only approach supported in
+ DFS at the moment.
+\end_layout
+
+\begin_layout Standard
+The user can supply two configuration files: one for the forces applied
+ to the PMSs (option 
+\series bold
+-f
+\series default
+) and one for the forces applied to SMSs (option 
+\series bold
+-r
+\series default
+).
+ If one or both these files are not supplied, default options will be used
+ for both PMSs and SMSs:
+\end_layout
+
+\begin_layout Itemize
+number of forces: 12
+\end_layout
+
+\begin_layout Itemize
+directions of forces: Fibonacci lattice 
+\end_layout
+
+\begin_layout Itemize
+force magnitude: 10.0 UNIT 
+\end_layout
+
+\begin_layout Itemize
+atoms to be considered as PMSs: 
+\begin_inset Quotes eld
+\end_inset
+
+name CA
+\begin_inset Quotes erd
+\end_inset
+
+
+\end_layout
+
+\begin_layout Itemize
+atoms to be considered as SMSs: 
+\begin_inset Quotes eld
+\end_inset
+
+name CA
+\begin_inset Quotes erd
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Moreover, the rescuability score can be calculated according to two different
+ strategies.
+ In the first mode, that we named 
+\begin_inset Quotes eld
+\end_inset
+
+constant force
+\begin_inset Quotes erd
+\end_inset
+
+, all the forces are applied with the same magnitude to the ANM model.
+ In the second, force magnitudes are normalized so that they give rise to
+ constant conformational distance values (close to 1A) between the original
+ and the perturbed structure, when the structure is perturbed with a given
+ single force.
+ The scaling constants are pre-calculated by dfs itself.
+ As the outcomes from both modes are usually required to extract as information
+ as possible from the method, by default, they are both run one after the
+ other, roughly doubling calculation time.
+ The outcome is two different and independently calculated sets of results.
+ This behaviour can however be overridden using option 
+\series bold
+-t
+\series default
+, which accepts 
+\begin_inset Quotes eld
+\end_inset
+
+both
+\begin_inset Quotes erd
+\end_inset
+
+, 
+\begin_inset Quotes eld
+\end_inset
+
+constant_force
+\begin_inset Quotes erd
+\end_inset
+
+ and 
+\begin_inset Quotes eld
+\end_inset
+
+constant_displacements
+\begin_inset Quotes erd
+\end_inset
+
+ as arguments, and defines in which mode(s) dfs will run.
+\end_layout
+
+\begin_layout Subsubsection
+Calculation of the rescuability score
+\end_layout
+
+\begin_layout Standard
+As detailed in the paper, the calculation of the rescuability score depends
+ on the conformational distance between the original, unperturbed structure
+ and the perturbed structures.
+ To this extent, two conformational distance measures are provided through
+ option 
+\series bold
+-d
+\series default
+: root mean square deviation (RMSD; with argument 
+\begin_inset Quotes eld
+\end_inset
+
+rmsd
+\begin_inset Quotes erd
+\end_inset
+
+) and distance root mean square deviation (dRMSD; with argument 
+\begin_inset Quotes eld
+\end_inset
+
+drmsd
+\begin_inset Quotes erd
+\end_inset
+
+).
+ RMSD is usually considered more intuitive and it's simpler to calculate,
+ however it has the disadvantage of requiring best-fit superimposition between
+ the two structures, and sometimes isolating the protein groups or domains
+ that give rise to meaningful superimpositions can be tricky (especially
+ when one part of the protein changes much more than the other e.g.
+ in a multi-domain protein).
+ Option 
+\series bold
+-F
+\series default
+ controls the fitting behaviour: it is possible to require for least-square
+ superimposition (with argument 
+\begin_inset Quotes eld
+\end_inset
+
+lsq_fit
+\begin_inset Quotes erd
+\end_inset
+
+) to be performed prior to RMSD calculation, and options 
+\series bold
+-a
+\series default
+ allows to specify which atom selection needs to be used for fitting.
+ No superimpisition is required for dRMSD, which is used by default (argument
+ 
+\begin_inset Quotes eld
+\end_inset
+
+none
+\begin_inset Quotes erd
+\end_inset
+
+).
+ It should noted that the atoms on which the force is applied are by default
+ not considerend in the calculation as their displacement is not really
+ meaningful for the calculation of the rescuability score.
+ It is however possible to include them in the calculation by using option
+ 
+\series bold
+-x
+\series default
+.
+\end_layout
+
+\begin_layout Subsubsection
+Output
+\end_layout
+
+\begin_layout Standard
+Several options in dfs control the type of output that is expected.
+ By default, dfs writes one or two (depending on option -t) rescuability
+ score matrices and nothing else.
+ These are written in a user-readable ASCII number matrix format, and their
+ basename can be changed with option 
+\series bold
+-S
+\series default
+.
+ Several details of the results of the calculation can be saved in a binary
+ file in the HDF5 portable format (https://www.hdfgroup.org/).
+ By default, this file is not written; the user needs to specify the output
+ filename with option 
+\series bold
+-o 
+\series default
+for that to happen.
+ HDF5 files can then be read with software as the HDF5 Tools (https://www.hdfgrou
+p.org/products/hdf5_tools/) or hdfview, or selectively converted in user-readable
+ formats using the script data_muncher, included in the distribution of
+ dfs.
+ The content of the file can be tuned with option 
+\series bold
+-w
+\series default
+, which determines what will be actually written in the file.
+ The following arguments are supported for -w:
+\end_layout
+
+\begin_layout Itemize
+force_vectors: the force vectors used in Linear Response Theory.
+ These are Fx(N*3) matrices, where F is the number of forces used for a
+ given pair of residues and N is the number of residues.
+ They are 0 everywhere except for the positions corresponding to the residues
+ on which forces are applied.
+\end_layout
+
+\begin_layout Itemize
+displacements: atomic displacements induced by the force vectors.
+ These are in Fx(N*3) format, as detailed in Force vectors.
+ Each number is a component in the 3D-space (x,y or z) of the displacement
+ vector induced by the perturbation on the protein structure.
+\end_layout
+
+\begin_layout Itemize
+perturbed_coordinates: Fx(N*3) matrix; contains the coordiantes of atoms
+ (in A) after displacements have been applied.
+ This alone is the default option for -w.
+\end_layout
+
+\begin_layout Itemize
+fitted_perturbed_coordinates: as in perturbed_coordinates, but after least
+ square fitting has been performed.
+ Only useful is fitting is actually performed (i.e.
+ not useful with dRMSD)
+\end_layout
+
+\begin_layout Itemize
+score_matrix: NxN Rescuability score matrix 
+\end_layout
+
+\begin_layout Itemize
+raw_score_matrix: score matrix per every residue pair, before the final
+ values of R are calculated (see the paper for details) 
+\end_layout
+
+\begin_layout Itemize
+conformational_distance_matrixes: conformational distance values on which
+ the raw_score_matrix is calculated.
+ 
+\end_layout
+
+\begin_layout Itemize
+scaling_factors: scaling factors used for force magnitudes
+\end_layout
+
+\begin_layout Itemize
+all: all of the above 
+\end_layout
+
+\begin_layout Standard
+For instance, option 
+\begin_inset Quotes eld
+\end_inset
+
+-w force_vectors perturbed_coordinates
+\begin_inset Quotes erd
+\end_inset
+
+ will save the force vectors and the perturbed coordinates in the binary
+ file, and nothing else.
+ It should be noted that this file can get very big (in the order of dozens
+ or even hundreds of GB) and that writing to disk can thus become the bottleneck
+ of the calculation, depending on your disk and processor speed.
+ In order to mitigate this issues, HDF5 files can be written with lossy
+ compression, and using option 
+\series bold
+-q 
+\series default
+sets the number of decimal places that are accurately written in the file
+ (default is 3).
+ Setting it to -1 enables lossless compression.
+\end_layout
+
+\begin_layout Subsection
+Compensatory power
+\end_layout
+
+\begin_layout Standard
+Compensatory power calculates the compensatory power index from a .dat ASCII
+ matrix file written by the dfs script and the original PDB file.
+ Compensatory power is, per every residue i, equal to the number of residues
+ predicted as rescued by residue i normalized by the number of contacts
+ that residue i has in the ANM model.
+ The script requires as arguments i) the PDB file originally used for a
+ dfs run, as well as the same selection string (-s option) that has been
+ provided to the dfs script (which is by default 'name CA'), and ii) one
+ or more .dat matrix files coming from a DFS run.
+ If more then one file are provided, the different matrices will be averaged
+ and the score will be calculated on the average matrix.
+ By default, compensatory poweris calculated (-t rescue_ability), but it
+ is also possible to calculate the ability of each residue to be compensated
+ in a similar way (-t rescuability).
+ Options -c and -d allow to tune the rescuability score cut-off and the
+ distance cut-off used to calculate the number of contacts, respectively.
+ Option -p writes a PDB file with compensatory power written in the b-factor
+ column.
+ If option -x N is also specified, the script writes 1 in the occupancy
+ column if the correspondent compensatory power value is above or equal
+ to the specified percentile N, and 0 otherwise.
+ N goes from 0 to 100.
+\end_layout
+
+\begin_layout Subsection
+dotM
+\end_layout
+
+\begin_layout Standard
+dotM calculates the Root Mean Square Inner Product (RMSIP) between the modes
+ calculated from the ANM and the displacement vectors calculated by DFS
+ for a given pair of residue and force directions.
+ (i.e.
+ the displacements obtained by the difference of coordinates between a structure
+ in which two forces are applied and a structure in which a single force
+ is applied).
+ The RMSIP is a measure of overlap between the two different sets of vectors
+ and ranges from 0 to 1, where 1 indicates perfectly superimposable sets.
+ The script requires as input i) one details HDF5 file written by the main
+ dfs script and ii) the original unperturbed PDB file that was given to
+ dfs as input.
+ There's no need to specify the parameters for the ANM model on which normal
+ modes are calculated, as they are read from the HDF5 file.
+ As displace- ments are calculated by forces acting on the pathogenic mutation
+ site and on the potential compensatory mutation site, the script requires
+ to select which residues have to be considered with options -R and -D.
+ Single residues can be specified either by a number, thus selecting residues
+ according to the consecu- tive ordering of residues in the PDB file, or
+ through a string containing PDB chain and numbering (for instance, A34
+ for residue 34 of chain A).
+ Multiple residues both for -D and -R can be selected by supplying selection
+ strings in prody style.
+ In this case, all the possible combinations of -R and -D residues are considere
+d.
+ Specifying the same residues for -R and -D will not be very meaningful,
+ as the displacement vector should be 0; however, in most cases, as the
+ .h5 file written by dfs uses a lossy compression scheme, very small but
+ non-zero differences are to be expected, resulting in a finite (but not
+ really meaningful) value of RMSIP.
+ As for every pair of residues a number of forces having different directions
+ are applied, these need to be selected as well, using options -r and -d,
+ that accept either a number from 0 to N-1, where N is the number of directions
+ defined in the HDF5 file, or the keywords "max" or "min" to select the
+ direction of forces that give rise to the maximum or the minimum score
+ respectively.
+ Option -n allows to define the number of modes for which the RMSIP is calculate
+d.
+ Option -t allows to select which dataset has to be considered from the
+ HDF5 file, between the atomic displacements (%s or %s).
+\end_layout
+
+\begin_layout Standard
+The results are printed in the standard output, and consist both of the
+ RMSIP value and of the inner product between each single mode and the displacem
+ent vector.
+\end_layout
+
+\begin_layout Subsection
+data_muncher
+\end_layout
+
+\begin_layout Standard
+data_muncher reads and digests a HDF5 binary format data file written by
+ dfs and writes files in the current directory that are easier to access
+ and read.
+ It saves numerical data types as .npz numpy-readable files or text files
+ and structural data as .dcd trajectory files.
+ Depending on what is requested, data_muncher can write a huge number of
+ files that take big amounts of disk space, so be careful for what you ask
+ for :) data_muncher accepts as argument just a .h5 file written by dfs.
+ By default, it writes several user-readable files with user-friendly names.
+ Option -w works like option -w of dfs, but in this case it allows the user
+ to select what should be extracted from the .h5 file.
+ The following keywords are accepted:
+\end_layout
+
+\begin_layout Standard
+* force_vectors: the force vectors used in Linear Response Theory * displacement
+s: atomic displacements induced by the force vectors * displacements_after_fit:
+ atomic displacements between the perturbed and non- perturbed structure
+ after least-square fitting before them has been performed.
+ Only meaningful if fitting has been performed.
+ * perturbed_coordinates: atomic coordinates of the original structure to
+ which atomic displacements have been applied.
+ * fitted_perturbed_coordinates: atomic coordinates of the original structure
+ to which atomic displacements and least square fitting have been applied.
+ Only meaningful if fitting has been performed.
+ * score_matrix: Rescuability score matrix * raw_score_matrix: score matrix
+ per every residue pair, before the final R value is calculated (see the
+ paper for details) * pm_cdm: conformational distance values for application
+ of a single force on the considered pathogenic residue * sm_cdm: conformational
+ distance values for the application of the forces on the pathogenic mutation
+ site and the secondary site * conformational_distance_matrixes: both pm_cdm
+ and sm_cdm * scaling_factors: scaling factors used for force magnitudes
+ * max_score_perturbed_coordinates: writes a PDB file with the coordinates
+ (after perturbation) of only the structure generated with the best-scoring
+ pair of forces, together with the relative single-force perturbation *
+ max_score_fitted_perturbed_coordinates: writes a PDB file with the coordinates
+ (after perturbation and least-square fitting) of only the structure generated
+ with the best-scoring pair of forces, together with the relative single-force
+ perturbation * all: all of the above
+\end_layout
+
+\begin_layout Standard
+Naturally, information can only be written to output files if it is present
+ in the HDF5 compressed file to begin with.
+ Notice that some options have meaning only if fitting has been performed
+ - meaning that they will return 0-filled arrays or coordinate files if
+ they were not really used in dfs.
+\end_layout
+
+\begin_layout Standard
+Option -p (which is the name of the PDB file used to run dfs) is required
+ only if structural data needs to be written.
+\end_layout
+
+\begin_layout Standard
+Option -t, if used, switches the use of .npz file to plain text files, which
+ take up more disk space.
+\end_layout
+
+\begin_layout Standard
+Option -d can be used to tune the number of decimal places to be written
+ in the file (must be 0 or positive).
+ 
+\end_layout
+
+\end_body
+\end_document
