@@ -24,13 +24,13 @@ percentile="-x 95"
 outprefix="T02"
 
 # output filename
-outputscore="-o $outprefix.fixed_force_normalized_score.dat"
+outputscore="$outprefix.fixed_force_normalized_score.dat"
 
 # output pdb filename
-outputpdb="-P $outputprefix.fixed_force_normalized_score.pdb" 
+outputpdb="$outputprefix.fixed_force_normalized_score.pdb" 
 
 # output_settings
-output_settings="$outputscore $outputpdb $percentile"
+output_settings="-o $outputscore -P $outputpdb $percentile"
 
 ######################################################################
 # check availability of input file
@@ -46,7 +46,7 @@ $compensatory_power $input_settings $output_settings >& log.T02.log
 
 ######################################################################
 # test check
-cp T02.fixed_force_normalized_score.dat ../check/T02.out
+cp $outputscore ../check/T02.out
 diff ../check/T02.out ../check/T02.chk > ../check/T02.diff
 if [ -s ../check/T02.diff ]
 then
