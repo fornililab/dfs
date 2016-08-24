@@ -1,4 +1,4 @@
-The DFS package implements the Dual Force Scanning method for the identification 
+The DFS package implements the Double Force Scanning method for the identification 
 of compensatory mutations in proteins as detailed in:
 
 <paper>
