@@ -50,3 +50,14 @@ output_settings="$write $precision $outsuffix"
 ######################################################################
 # command line
 $dfs $cfg_settings $anm_settings -s "name CA" $output_settings $input_settings >& log.T01.log
+
+######################################################################
+# test check
+cksum fixed_*_scores_T01.dat > ../check/T01.out
+diff ../check/T01.out ../check/T01.chk > ../check/T01.diff
+if [ -s ../check/T01.diff ]
+then
+        echo "TEST T01: FAILED"
+else
+        echo "TEST T01: PASSED"
+fi
