@@ -579,45 +579,133 @@ dotM calculates the Root Mean Square Inner Product (RMSIP) between the modes
  the displacements obtained by the difference of coordinates between a structure
  in which two forces are applied and a structure in which a single force
  is applied).
- The RMSIP is a measure of overlap between the two different sets of vectors
- and ranges from 0 to 1, where 1 indicates perfectly superimposable sets.
- The script requires as input i) one details HDF5 file written by the main
- dfs script and ii) the original unperturbed PDB file that was given to
- dfs as input.
- There's no need to specify the parameters for the ANM model on which normal
- modes are calculated, as they are read from the HDF5 file.
- As displace- ments are calculated by forces acting on the pathogenic mutation
- site and on the potential compensatory mutation site, the script requires
- to select which residues have to be considered with options -R and -D.
- Single residues can be specified either by a number, thus selecting residues
- according to the consecu- tive ordering of residues in the PDB file, or
- through a string containing PDB chain and numbering (for instance, A34
- for residue 34 of chain A).
- Multiple residues both for -D and -R can be selected by supplying selection
- strings in prody style.
- In this case, all the possible combinations of -R and -D residues are considere
-d.
- Specifying the same residues for -R and -D will not be very meaningful,
- as the displacement vector should be 0; however, in most cases, as the
- .h5 file written by dfs uses a lossy compression scheme, very small but
- non-zero differences are to be expected, resulting in a finite (but not
- really meaningful) value of RMSIP.
- As for every pair of residues a number of forces having different directions
- are applied, these need to be selected as well, using options -r and -d,
- that accept either a number from 0 to N-1, where N is the number of directions
- defined in the HDF5 file, or the keywords "max" or "min" to select the
- direction of forces that give rise to the maximum or the minimum score
- respectively.
- Option -n allows to define the number of modes for which the RMSIP is calculate
-d.
- Option -t allows to select which dataset has to be considered from the
- HDF5 file, between the atomic displacements (%s or %s).
+ RMSIP for this specific case is calculated as:
 \end_layout
 
 \begin_layout Standard
-The results are printed in the standard output, and consist both of the
- RMSIP value and of the inner product between each single mode and the displacem
-ent vector.
+\begin_inset Formula 
+\[
+RMSIP=\sqrt{\sum_{i=1}^{n}d\cdot v_{i}}
+\]
+
+\end_inset
+
+Where 
+\begin_inset Formula $d$
+\end_inset
+
+ is the previously desribed displacement vector and 
+\begin_inset Formula $v$
+\end_inset
+
+ is one eigenvector of the ANM basis.
+ 
+\begin_inset Formula $i$
+\end_inset
+
+ runs over the first 
+\begin_inset Formula $n$
+\end_inset
+
+ eigenvectors of the ANM normal modes (10 by default - but this can be changed
+ using option 
+\series bold
+-n
+\series default
+).
+ RMSIP is a measure of overlap between the two different sets of vectors
+ and ranges from 0 to 1, where 1 indicates perfectly superimposable sets.
+ 
+\end_layout
+
+\begin_layout Standard
+The script requires as input i) one details HDF5 file written by the main
+ dfs script (option 
+\series bold
+-f
+\series default
+) and ii) the original unperturbed PDB file that was given to dfs as input
+ (option 
+\series bold
+-p
+\series default
+).
+ There's no need to specify the parameters for the ANM model on which normal
+ modes are calculated, as they are read from the HDF5 file.
+ 
+\end_layout
+
+\begin_layout Standard
+As displacements are calculated by forces acting on the pathogenic mutation
+ site and on the potential compensatory mutation site, the script requires
+ to select which residues have to be considered with options 
+\series bold
+-R
+\series default
+ and 
+\series bold
+-D
+\series default
+ respectively.
+ Single residues can be specified either by a single number, thus selecting
+ residues according to the consecutive ordering of residues in the PDB file,
+ or through a string containing PDB chain and numbering (for instance, A34
+ for residue 34 of chain A).
+ Multiple residues both for -D and -R can be selected by supplying selection
+ strings in ProDy style.
+ In this case, all the possible combinations of -R and -D residues are considere
+d.
+ It should be noted however that specifying the same residues for -R and
+ -D will not be very meaningful, as the displacement vector should be 0;
+ however, in most cases, as the details HDF5 file written by dfs uses a
+ lossy compression scheme, very small but non-zero differences are to be
+ expected, resulting in a finite (but not really meaningful) value of RMSIP.
+ 
+\end_layout
+
+\begin_layout Standard
+As for every pair of residues a number of forces having different directions
+ are applied, these need to be selected as well, using options 
+\series bold
+-r
+\series default
+ and 
+\series bold
+-d
+\series default
+, that accept either a number from 0 to N-1, where N is the number of directions
+ defined in the HDF5 file, or the keyword "max" to select the direction
+ of forces that give rise to the maximum score (this is the default).
+ 
+\end_layout
+
+\begin_layout Standard
+Option -t allows to select which dataset of atomic displacements has to
+ be considered from the HDF5 file, and thus accepts either 
+\begin_inset Quotes eld
+\end_inset
+
+perturbed_coordinates
+\begin_inset Quotes erd
+\end_inset
+
+ or 
+\begin_inset Quotes eld
+\end_inset
+
+fitted_perturbed_coordinates
+\begin_inset Quotes erd
+\end_inset
+
+ as argument.
+\end_layout
+
+\begin_layout Standard
+The results consist of both of the RMSIP value and of the inner product
+ between each single mode and the displacement vector, and are written to
+ a text file whose name can be selected using option 
+\series bold
+-o
 \end_layout
 
 \begin_layout Subsection
@@ -627,7 +715,7 @@ data_muncher
 \begin_layout Standard
 data_muncher reads and digests a HDF5 binary format data file written by
  dfs and writes files in the current directory that are easier to access
- and read.
+ and read by th user.
  It saves numerical data types as .npz numpy-readable files or text files
  and structural data as .dcd trajectory files.
  Depending on what is requested, data_muncher can write a huge number of
