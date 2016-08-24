@@ -226,11 +226,12 @@ help="Use the coordinates in the PDB instead of the single-force structures to c
         n_elms = int(np.sqrt(this_rs.shape[0]))
 
         where = func(args.r_score, args.d_score, this_rs)
+        if where[0].shape[0] > 1:
+            where = (np.array([where[0][0]]), np.array([where[1][0]]))
         where_idx = where[0][0]*n_elms + where[1][0]
 
         selection = "name CA " + " and ".join(["(not resindex %s)"%x for x in pair[0:2]])
         s_sel =   s.select(selection)
-
 
         if not args.do_disp_orig:
             ref_coords  = np.array(fh[path_ref][args.data_type])
@@ -261,6 +262,7 @@ help="Use the coordinates in the PDB instead of the single-force structures to c
             this_val = np.dot(norm_displacements.flatten(), m.flatten())**2
             vals.append(np.sqrt(this_val))
             this_sum += this_val
+
 
         rmsip = np.sqrt(this_sum)
 
