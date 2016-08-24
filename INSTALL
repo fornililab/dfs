@@ -60,7 +60,7 @@ installed system-wise by running in the dfs installation directory:
 
 or, on a per-user basis:
 
-    python2.7 install --user --record files.txt
+    python2.7 setup.py install --user --record files.txt
 
 this will build the Cython/C files as well as copy the installation files in 
 their destination directories. If you have installed the package system-wise,
