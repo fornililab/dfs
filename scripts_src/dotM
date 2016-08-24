@@ -88,12 +88,12 @@ if __name__ == "__main__":
     required_options.add_argument("-f", "--details", type=str, dest="h5_fname",
                         help="HDF5 details\ file from a DFS calculation", required=True)
     required_options.add_argument("-p", "--pdb", dest="original_pdb", type=str, 
-                                  help="Original unperturbed PDB file", required=True)
-                                  
-    parser.add_argument("-R", dest="reference_residue", type=str, default=None, 
+                                  help="Original unperturbed PDB file", required=True)                              
+    required_options.add_argument("-R", dest="reference_residue", type=str, default=None, 
 help="Pathogenic mutation site")
-    parser.add_argument("-D", dest="dfs_residue", type=str, default=None, 
+    required_options.add_argument("-D", dest="dfs_residue", type=str, default=None, 
 help="Secondary site")
+
     parser.add_argument("-r", dest="r_score", default=max_s, type=str, 
 help="Direction of the force on the pathogenic mutation site")
     parser.add_argument("-d", dest="d_score", default=max_s, type=str, 
@@ -104,6 +104,9 @@ default=10, type=int)
 the calculation of displacements", default=P_XYZ, choices=(P_XYZ, FP_XYZ))
     parser.add_argument("-o", dest="output_file", help="name of text output\
 file", default="rmsip.txt")
+    parser.add_argument("-m", dest="do_disp_orig", default=False, action="store_true", 
+help="Use the coordinates in the PDB instead of the single-force structures to calculate displacements")
+
 
     args = parser.parse_args()
 
@@ -166,6 +169,7 @@ file", default="rmsip.txt")
         exit(1)
 
     pairs = product(ref_r_sel, dfs_r_sel)
+    print pairs
     
     h5_fname = args.h5_fname
     n_modes = int(args.n_modes)
@@ -218,31 +222,30 @@ file", default="rmsip.txt")
         path = "/%s/%s/" % (pair[0], pair[1])
         path_ref = "/%s/" % (pair[0])
 
-        this_coords = np.array(fh[path][args.data_type])
-        ref_coords  = np.array(fh[path_ref][args.data_type])
-
         this_rs = np.array(fh[path][RAW_SCORES])
-
         n_elms = int(np.sqrt(this_rs.shape[0]))
 
         where = func(args.r_score, args.d_score, this_rs)
         where_idx = where[0][0]*n_elms + where[1][0]
 
-        s_ref = s.copy()
-        s_dfs = s.copy()
-
-        s_ref.setCoords(ref_coords[where_idx])
-        s_dfs.setCoords(this_coords[where_idx])
-
         selection = "name CA " + " and ".join(["(not resindex %s)"%x for x in pair[0:2]])
-
-        sel_ref = s_ref.select(selection)
-        sel_dfs = s_dfs.select(selection)
         s_sel =   s.select(selection)
 
-        t = pd.calcTransformation(sel_ref, s_sel)
-        t_ref = pd.applyTransformation(t, s_ref)
 
+        if not args.do_disp_orig:
+            ref_coords  = np.array(fh[path_ref][args.data_type])
+            s_ref = s.copy()
+            s_ref.setCoords(ref_coords[where_idx])
+            sel_ref = s_ref.select(selection)
+            t = pd.calcTransformation(sel_ref, s_sel)
+            t_ref = pd.applyTransformation(t, s_ref)
+        else:
+            t_ref = s
+
+        this_coords = np.array(fh[path][args.data_type])
+        s_dfs = s.copy()
+        s_dfs.setCoords(this_coords[where_idx])
+        sel_dfs = s_dfs.select(selection)
         t = pd.calcTransformation(sel_dfs, s_sel)
         t_dfs = pd.applyTransformation(t, s_dfs)
 
