@@ -149,7 +149,12 @@ def write_data(structure, atoms, atom_indices, d, fmt="%.5f", highest=False, low
 
     if data_type in [DF, DR, F_DR, RAW_SCORES, ref_CD, dfs_CD]:
         if data_type == DF:
+            sel_forces = []
+            for idx in this_idxs:
+                sel_forces.extend(np.arange(idx*3, (idx+1)*3, 1))
+            data = data[:, sel_forces]
             fname = "force_vectors_%s.%s" % (label, num_ext)
+            
     
         elif data_type == DR:
             fname = "displacements_%s.%s" % (label, num_ext)
