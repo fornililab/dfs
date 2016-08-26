@@ -90,9 +90,9 @@ if __name__ == "__main__":
     required_options.add_argument("-p", "--pdb", dest="original_pdb", type=str, 
                                   help="Original unperturbed PDB file", required=True)                              
     required_options.add_argument("-R", dest="reference_residue", type=str, default=None, 
-help="Pathogenic mutation site")
+help="Pathogenic mutation site", required=True)
     required_options.add_argument("-D", dest="dfs_residue", type=str, default=None, 
-help="Secondary site")
+help="Secondary site", required=True)
 
     parser.add_argument("-r", dest="r_score", default=max_s, type=str, 
 help="Direction of the force on the pathogenic mutation site")
@@ -169,7 +169,6 @@ help="Use the coordinates in the PDB instead of the single-force structures to c
         exit(1)
 
     pairs = product(ref_r_sel, dfs_r_sel)
-    print pairs
     
     h5_fname = args.h5_fname
     n_modes = int(args.n_modes)
