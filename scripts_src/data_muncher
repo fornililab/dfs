@@ -1,4 +1,4 @@
-#! /usr/bin/env python
+#!/usr/bin/env python
 # data_muncher.py - Write data in .h5 files from DFS runs in easily readable 
 # formats Copyright (C) 2015 Matteo Tiberti <matteo.tiberti@gmail.com>
 #
@@ -21,61 +21,14 @@ written by dfs and writes files in the current directory that are easier to
 access and read. It saves numerical data types as .npz numpy-readable files or
 text files and structural data as .dcd trajectory files. Depending on what is 
 requested, data_muncher can write a huge number of files that take big amounts 
-of disk space, so be careful for what you ask for :)"""
-
-outro = """data_muncher accepts as argument just a .h5 file written by dfs. By
-default, it writes several user-readable files with user-friendly names. Option
--w works like option -w of dfs, but in this case it allows the user to select
-what should be extracted from the .h5 file. The following keywords are 
-accepted:
-
-* force_vectors: the force vectors used in Linear Response Theory
-* displacements: atomic displacements induced by the force vectors
-* displacements_after_fit: atomic displacements between the perturbed and non-
-perturbed structure after least-square fitting before them has been 
-performed. Only meaningful if fitting has been performed.
-* perturbed_coordinates: atomic coordinates of the original structure to which
-atomic displacements have been applied. 
-* fitted_perturbed_coordinates: atomic coordinates of the original structure to 
-which atomic displacements and least square fitting have been applied. Only 
-meaningful if fitting has been performed.
-* score_matrix: Rescuability score matrix
-* raw_score_matrix: score matrix per every residue pair, before the final R 
-value is calculated (see the paper for details)
-* pm_cdm: conformational distance values for application of a single force on
-the considered pathogenic residue
-* sm_cdm: conformational distance values for the application of the forces on
-the pathogenic mutation site and the secondary site
-* conformational_distance_matrixes: both pm_cdm and sm_cdm
-* scaling_factors: scaling factors used for force magnitudes
-* max_score_perturbed_coordinates: writes a PDB file with the coordinates 
-(after perturbation) of only the structure generated with the best-scoring 
-pair of forces, together with the relative single-force perturbation
-* max_score_fitted_perturbed_coordinates: writes a PDB file with the 
-coordinates (after perturbation and least-square fitting) of only the 
-structure generated with the best-scoring pair of forces, together with the 
-relative single-force perturbation
-* all: all of the above
-
-Naturally, information can only be written to output files if it is present in 
-the HDF5 compressed file to begin with. Notice that some options have meaning
-only if fitting has been performed - meaning that they will return 0-filled 
-arrays or coordinate files if they were not really used in dfs.
-
-Option -p (which is the name of the PDB file used to run dfs) is required only
-if structural data needs to be written.
-
-Option -t, if used, switches the use of .npz file to plain text files, which
-take up more disk space.
-
-Option -d can be used to tune the number of decimal places to be written in
-the file (must be 0 or positive).
+of disk space, so be careful for what you ask for :)
 
 Example:
 
-    data_muncher -w all_available -t -d 3 ../fixed_force_details.h5 \
+    data_muncher -w force_vectors -t -d 3 -f ../fixed_force_details.h5 \
     -p ../original.pdb
 """
+outro=""
 
 import h5py
 import numpy as np
@@ -259,9 +212,9 @@ if __name__ == "__main__":
                            default=3, action='store', help="Number of decimal\
                            places to be used in writing files")
     argparser.add_argument("-R", dest="reference_residue", type=str, default="protein and name CA", 
-                           help="Pathogenic mutation site")
+                           help="Pathogenic mutation site (default: 'name CA')")
     argparser.add_argument("-D", dest="dfs_residue", type=str, default="protein and name CA", 
-                           help="Secondary site")
+                           help="Secondary site (default: 'name CA'")
 
     args = argparser.parse_args()
 

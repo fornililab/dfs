@@ -26,48 +26,18 @@ from dfsutils import P_XYZ, FP_XYZ, RAW_SCORES
 
 intro = """dotM calculates the Root Mean Square Inner Product (RMSIP) between
 the modes calculated from the ANM and the displacement vectors calculated by 
-DFS for a given pair of residue and force directions. (i.e. the displacements
-obtained by the difference of coordinates between a structure in which
-two forces are applied and a structure in which a single force is applied).
-The RMSIP is a measure of overlap between the two different sets of vectors
- and ranges from 0 to 1, where 1 indicates perfectly superimposable sets.
+DFS for a given pair of residue and force directions. RMSIP is a measure of 
+overlap between the two different sets of vectors and ranges from 0 to 1, 
+where 1 indicates perfectly superimposable sets.
+
+Examples:
+
+    dotM -f fixed_force_details.h5 -p original.pdb -R A5 -D A10 -r 1 -d 5
+
+
 """
 
-outro="""The script requires as input i) one details HDF5 file written by the 
-main dfs script and ii) the original unperturbed PDB file that was given to dfs
-as input. There's no need to specify the parameters for the ANM model on which
-normal modes are calculated, as they are read from the HDF5 file. As displace-
-ments are calculated by forces acting on the pathogenic mutation site and on 
-the potential compensatory mutation site, the script requires to select which
-residues have to be considered with options -R and -D. Single residues can be 
-specified either by a number, thus selecting residues according to the consecu-
-tive ordering of residues in the PDB file, or through a string containing PDB 
-chain and numbering (for instance, A34 for residue 34 of chain A). Multiple
-residues both for -D and -R can be selected by supplying selection strings
-in prody style. In this case, all the possible combinations of -R and -D
-residues are considered. Specifying the same residues for -R and -D will not
-be very meaningful, as the displacement vector should be 0; however, in most
-cases, as the .h5 file written by dfs uses a lossy compression scheme, very 
-small but non-zero differences are to be expected, resulting in a finite
-(but not really meaningful) value  of RMSIP.
-As for every pair of residues a number of forces having different directions are applied, 
-these need to be selected as well, using options -r and -d, that accept either 
-a number from 0 to N-1, where N is the number of directions defined in the HDF5 
-file, or the keywords "max" or "min" to select the direction of forces that 
-give rise to the maximum or the minimum score respectively. Option -n allows to
-define the number of modes for which the RMSIP is calculated. Option -t allows
-to select which dataset has to be considered from the HDF5 file, between the 
-atomic displacements (%s or %s).
-
-The results are printed in the standard output, and consist both of the RMSIP 
-value and of the inner product between each single mode and the 
-displacement vector.
-
-A typical command line for this script goes like:
-
-    dotM fixed_force_details.h5 original.pdb -R A5 -D A10 -r 1 -d 5 -t %s
-""" % (P_XYZ, FP_XYZ, P_XYZ)
-
+outro=""
 min_s = "min"
 max_s = "max"
 

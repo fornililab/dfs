@@ -24,28 +24,15 @@ intro="""Compensatory power calculates the compensatory power index from a .dat
 ASCII matrix file written by the dfs script and the original PDB file.
 Compensatory power is, per every residue i, equal to the number of residues
 predicted as rescued by residue i normalized by the number of contacts that
-residue i has in the ANM model."""
-
-outro="""The script requires as arguments i) the PDB file originally used for 
-a dfs run, as well as the same selection string (-s option) that has been 
-provided to the dfs script (which is by default 'name CA'), and ii) one or more
-.dat matrix files coming from a DFS run. If more then one file are provided, 
-the different matrices will be averaged and the score will be calculated on the
-average matrix. By default, compensatory poweris calculated (-t rescue_ability), 
-but it is also possible to calculate the ability of each residue to be 
-compensated in a similar way (-t rescuability). Options -c and -d allow to tune
-the rescuability score cut-off and the distance cut-off used to calculate the 
-number of contacts, respectively. Option -p writes a PDB file with compensatory
-power written in the b-factor column. If option -x N is also specified, the 
-script writes 1 in the occupancy column if the correspondent compensatory power
-value is above or equal to the specified percentile N, and 0 otherwise. N goes 
-from 0 to 100.
+residue i has in the ANM model.
 
 Example:
 
-    compensatory_power fixed_force_scores.dat original.pdb -o \
-    normalized_score.dat -p normalized_score.pdb -x 95"""
+    compensatory_power -m fixed_force_scores.dat -p original.pdb -o \
+    normalized_score.dat -p normalized_score.pdb -x 95
 
+"""
+outro = ""
 
 def get_contacts(s, dist_co):
     return np.sum(pd.buildDistMatrix(s) <= dist_co, axis=0, dtype=np.float)-1
