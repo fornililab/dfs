@@ -81,7 +81,7 @@ refset1:   name CA
 
 [ force sets ]
 
-refset1:   fibonacci_lattice 12 10.818 r"""
+refset1:   fibonacci_lattice 12 10.0 r"""
 
 default_config_string="""[ atom sets ]
 
@@ -89,7 +89,7 @@ set2:   name CA
 
 [ force sets ]
 
-set2:   fibonacci_lattice 12 10.818 c"""
+set2:   fibonacci_lattice 12 10.0 c"""
 
 if __name__ == "__main__":
 
