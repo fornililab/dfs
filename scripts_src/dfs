@@ -160,15 +160,16 @@ if __name__ == "__main__":
                          if -o is not supplied" % P_XYZ, default=P_XYZ)
     parser.add_argument("-o", "--output", dest="output_fname", 
                         default=None, type=str, action="store", 
-                        help="Filename to be used as output in case -w/--write\
-                         is specified")
+                        help="Suffix to be used for the filename of the HDF5 \
+                        details file, in case -w/--write is specified")
     parser.add_argument("-t", "--force_mode", dest="force_mode", nargs='?', 
                         type=str, default="both", choices=["fixed_forces, \
                         fixed_displacementsfo, both"], help="Force mode to be \
                         used (default: both)")
     parser.add_argument("-S", "--output-scores", dest="output_scores", 
                         default="scores", type=str,  action="store", 
-                        help="Basename for the output rescuability score matrix")
+                        help="Suffix for the filename of the rescuability score \
+                        matrices")
     parser.add_argument("-q", "--precision", dest="precision", default=-1, 
                         type=int, help="Number of decimal places to be used \
                         in .h5 detail files (-1 for lossless; default: 3)")
