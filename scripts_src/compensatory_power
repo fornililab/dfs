@@ -67,7 +67,6 @@ if __name__ == '__main__':
         axis = 1
 
     matrices = []
-    print args.score_matrix
     for mat in args.score_matrix:
         try:
             matrices.append(np.loadtxt(mat))
