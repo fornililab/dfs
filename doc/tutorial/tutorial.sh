@@ -21,7 +21,7 @@ pdb="original.pdb"
 c=15.0
 
 # force constant for ANM harmonic potential (gamma)
-g=0.1
+g=1.0
 
 # pathogenic mutation site (PM) and Secondary mutation site (SM) 
 # configuration files. Read the files themselves for information
