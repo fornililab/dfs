@@ -58,22 +58,22 @@ if __name__ == "__main__":
     required_options.add_argument("-f", "--details", type=str, dest="h5_fname",
                         help="HDF5 details\ file from a DFS calculation", required=True)
     required_options.add_argument("-p", "--pdb", dest="original_pdb", type=str, 
-                                  help="Original unperturbed PDB file", required=True)                              
+                                  help="Original unperturbed PDB file", required=True)
     required_options.add_argument("-R", dest="reference_residue", type=str, default=None, 
 help="Pathogenic mutation site", required=True)
     required_options.add_argument("-D", dest="dfs_residue", type=str, default=None, 
 help="Secondary site", required=True)
 
     parser.add_argument("-r", dest="r_score", default=max_s, type=str, 
-help="Direction of the force on the pathogenic mutation site")
+help="Direction of the force on the pathogenic mutation site (default: 'max'")
     parser.add_argument("-d", dest="d_score", default=max_s, type=str, 
-help="Direction of the force on the secondary site")
-    parser.add_argument("-n", dest="n_modes", help="number of modes", 
+help="Direction of the force on the secondary site (default: 'max')")
+    parser.add_argument("-n", dest="n_modes", help="number of ANM modes (default: 10)", 
 default=10, type=int)
     parser.add_argument("-t", dest="data_type", help="data type to be used for\
-the calculation of displacements", default=P_XYZ, choices=(P_XYZ, FP_XYZ))
+the calculation of displacements (default: %s)"%P_XYZ, default=P_XYZ, choices=(P_XYZ, FP_XYZ))
     parser.add_argument("-o", dest="output_file", help="name of text output\
-file", default="rmsip.txt")
+file (default: rmsip.txt)", default="rmsip.txt")
     parser.add_argument("-m", dest="do_disp_orig", default=False, action="store_true", 
 help="Use the coordinates in the PDB instead of the single-force structures to calculate displacements")
 

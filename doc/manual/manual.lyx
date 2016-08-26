@@ -448,7 +448,8 @@ p.org/products/hdf5_tools/) or hdfview, or selectively converted in user-readabl
 -w
 \series default
 , which determines what will be actually written in the file.
- The following arguments are supported for -w:
+ The following arguments are supported for -w and are generally useful for
+ users:
 \end_layout
 
 \begin_layout Itemize
@@ -464,14 +465,15 @@ force_vectors: the force vectors used in Linear Response Theory.
 \end_layout
 
 \begin_layout Itemize
-displacements: atomic displacements induced by the force vectors.
- These are in 
-\begin_inset Formula $F*3N$
+score_matrix: 
+\begin_inset Formula $N*N$
 \end_inset
 
- format, as detailed in Force vectors.
- Each number is a component in the 3D-space (x,y or z) of the displacement
- vector induced by the perturbation on the protein structure.
+ Rescuability score matrix 
+\end_layout
+
+\begin_layout Standard
+Others are more useful for developers and for having an in-depth look:
 \end_layout
 
 \begin_layout Itemize
@@ -492,11 +494,14 @@ fitted_perturbed_coordinates: as in perturbed_coordinates, but after least
 \end_layout
 
 \begin_layout Itemize
-score_matrix: 
-\begin_inset Formula $N*N$
+displacements: atomic displacements induced by the force vectors.
+ These are in 
+\begin_inset Formula $F*3N$
 \end_inset
 
- Rescuability score matrix 
+ format, as detailed in Force vectors.
+ Each number is a component in the 3D-space (x,y or z) of the displacement
+ vector induced by the perturbation on the protein structure.
 \end_layout
 
 \begin_layout Itemize
@@ -559,11 +564,11 @@ sets the number of decimal places that are accurately written in the file
 \end_layout
 
 \begin_layout Subsection
-Compensatory power
+Compensatory_power
 \end_layout
 
 \begin_layout Standard
-Compensatory power calculates the compensatory power index from a .dat ASCII
+compensatory_power calculates the compensatory power index from a .dat ASCII
  matrix file written by the dfs script and the original PDB file.
  Compensatory power is defined, per every residue 
 \begin_inset Formula $i$

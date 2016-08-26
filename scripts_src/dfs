@@ -18,7 +18,6 @@
 import prody as pd
 from prody import SelectionError
 from dfsutils import *
-from dfsutils.libdfs import _get_drmsd
 import argparse
 from argparse import RawTextHelpFormatter
 from prody import LOGGER as log
@@ -112,9 +111,9 @@ if __name__ == "__main__":
     parser.add_argument("-c", "--cutoff", dest="anm_cutoff", default=15.0, \
                         type=float, help="Distance cut-off for generating the \
                         topology of ANM (in A; default is 15.0)")
-    parser.add_argument("-g", "--gamma", dest="anm_gamma", default=0.1, 
-                        type=float, help="Spring force constant for ANM; \
-                        default is 1.0)")
+    parser.add_argument("-g", "--gamma", dest="anm_gamma", default=1.0, 
+                        type=float, help="Spring force constant for ANM \
+                        (default is 1.0)")
     parser.add_argument("-m", "--write-hessian", dest="hessian_output", 
                         nargs='?', const="hessian.dat", type=str, default=None, 
                         help="Save Hessian matrix of the ANM model (default: \
@@ -146,8 +145,7 @@ if __name__ == "__main__":
                          geometries")
     parser.add_argument("-a", "--fit-selection", dest="fit_selection", 
                         default="name CA", help="selection string that selects\
-                        the group that will be used to superimpose the \
-                        modified structures to the original one.")
+                        the group that will be used for fitting")
     parser.add_argument("-d", "--conformational-distance", 
                         dest="conformational_distance", choices=scores.keys(), 
                         help="which conformational distance measure will be \
@@ -173,7 +171,7 @@ if __name__ == "__main__":
                         help="Basename for the output rescuability score matrix")
     parser.add_argument("-q", "--precision", dest="precision", default=-1, 
                         type=int, help="Number of decimal places to be used \
-                        in .h5 detail files (-1 for lossless)")
+                        in .h5 detail files (-1 for lossless; default: 3)")
     parser.add_argument("-x", "--include-application-sites", 
                         dest="exclude_sites", action='store_false', 
                         default=True, help="Include force application sites \

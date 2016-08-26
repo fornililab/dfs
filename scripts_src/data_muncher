@@ -210,7 +210,7 @@ if __name__ == "__main__":
                            possible.")
     argparser.add_argument("-d", "--decimal", dest="decimal", type=int, 
                            default=3, action='store', help="Number of decimal\
-                           places to be used in writing files")
+                           places to be used in writing files (default: 3")
     argparser.add_argument("-R", dest="reference_residue", type=str, default="protein and name CA", 
                            help="Pathogenic mutation site (default: 'name CA')")
     argparser.add_argument("-D", dest="dfs_residue", type=str, default="protein and name CA", 
