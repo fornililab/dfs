@@ -459,7 +459,7 @@ class PerturbationResponseJob:
             fitted_structures = prody.Ensemble(title="displaced_fitted_structures")
             fitted_structures.setAtoms(self.atoms)
 
-            this_idxs = [this.origin.getResindex() for this in this_comb]
+            this_idxs = [this.origin.getResindex() for this in this_comb]        
 
             run.prepare()
             run.run()
@@ -491,7 +491,7 @@ class PerturbationResponseJob:
             self.score_kwargs["this_idxs"] = this_idxs
             self.score_kwargs["ref_score_idxs"] = ref_score_idxs
             self.score_kwargs["this_score_idxs"] = this_score_idxs
-
+            
             score_idxs = [ np.where(c.origin.getResindex() == self.indices) for c in this_perturbation ]
             score = self.scoring_function(  self.atoms,
                                             fitted_ref_structures,
@@ -867,8 +867,13 @@ class Score:
 
         if kwargs["exclude_sites"]:
             idxs = self.ref_original.getResindices()
+            #print list(self.ref_original)
+            #print "XXX", kwargs["this_score_idxs"]
 
-            mask = idxs[np.logical_and.reduce([ idxs != s for s in kwargs["this_idxs"]])]
+            mask = idxs[np.logical_and.reduce([ idxs != s[0] for s in kwargs["this_score_idxs"]])]
+            
+            #print "mask", mask            
+            
             self.ref_original = self.ref_original[mask]
             self.this_original = self.this_original[mask]
 
@@ -877,7 +882,20 @@ class Score:
             ref_structures.setAtoms(self.ref_original)
             structures.setAtoms(self.this_original)
 
-            mask = idxs[np.logical_and.reduce([ idxs != s for s in np.array(kwargs["this_score_idxs"]).T[0,0,:]])]
+            #print self.ref_structures, "GGG"
+            #print "idxs", idxs
+
+            mask = idxs[np.logical_and.reduce([ idxs != s for s in np.array(kwargs["this_score_idxs"]).T[0,0,:]])]        
+            #print "mask2", mask    
+
+            
+            #print '----'            
+            
+            #print "this_idxs", kwargs["this_idxs"]
+            #print "this_score_idxs", kwargs["this_score_idxs"]            
+            #print self.ref_structures.getCoordsets().shape
+            #print len(ref_structures.getAtoms())
+            
             ref_structures.addCoordset(self.ref_structures.getCoordsets()[:,mask,:])
             structures.addCoordset(self.structures.getCoordsets()[:,mask,:])
  
