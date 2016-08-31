@@ -1105,7 +1105,14 @@ def get_scaling_factors(original,
 
 
 def assign_masses(atoms):
-    atoms.setMasses([ atomic_weights[i] for i in atoms.getElements() ])
+    masses = []
+    for elm in atoms.getElements():
+        try:
+            masses.append(atomic_weights[elm])
+        except:
+            log.warning("Element %s was not recognized; Standard mass of 12 will be used" % elm)
+            masses.append(12)
+    atoms.setMasses(masses)
 
 def inertia_tensor(atoms):
     return np.sum( [ m*(np.dot(c,c)*np.identity(3)-np.outer(c,c)) for c,m in zip(atoms.getCoords(),atoms.getMasses()) ], axis=0)
