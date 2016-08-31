@@ -102,7 +102,8 @@ if __name__ == '__main__':
     except:
         log.error("Couldn't write file %s, Exiting..." % args.outfile)
 
-    res_indices = [ a.getResindex() for a in structure]
+    res_indices = [ a.getResindex() for a in selection]
+    print res_indices
 
     betas = []
     this_i = -1
