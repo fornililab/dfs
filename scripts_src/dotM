@@ -80,6 +80,9 @@ help="Use the coordinates in the PDB instead of the single-force structures to c
 
     args = parser.parse_args()
 
+    args.reference_residue = " ".join(args.reference_residue)
+    args.dfs_residue = " ".join(args.dfs_residue)
+
     pd.confProDy(verbosity='warning')
 
     s = pd.parsePDB(args.original_pdb)

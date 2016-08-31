@@ -101,10 +101,10 @@ if __name__ == "__main__":
                                   required=True, dest="PDB")
 
     parser.add_argument("-s", "--selection", dest="selection_string", type=str, 
-                        default="name CA", help="CHARMM-style selection of \
+                        default=["name CA"], help="CHARMM-style selection of \
                         atoms to be used to build the ANM model. The final \
                         selection should contain at most one CA atom per \
-                        residue.")
+                        residue.", nargs='+')
     parser.add_argument("-v", "--verbose", dest="verbose", 
                         help="toggle verbose mode", action='store_true',
                         default=False)
@@ -208,6 +208,8 @@ if __name__ == "__main__":
         exit(1)
 
     assign_masses(structure)
+
+    args.selection_string = " ".join(args.selection_string)
 
     # 2. select atoms for building the model
     log.info("Selection string is %s" % args.selection_string)

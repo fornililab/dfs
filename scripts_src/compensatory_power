@@ -51,7 +51,7 @@ if __name__ == '__main__':
 
     parser.add_argument("-m", "--score-matrix", dest="score_matrix", type=str, action='store', nargs='+', help="Score matrix filename(s)", required=True)
     parser.add_argument('-t', '--score-type', type=str, dest="type", action='store', choices=["rescue_ability", "rescuability"], default="rescue_ability", help="Use rescue_ability or rescuability values (default: rescue_ability)")
-    parser.add_argument('-s', '--selection-string', dest="sel_string", action='store', type=str, default="name CA", help=("Selection string for the PDB file (default: name CA)"))
+    parser.add_argument('-s', '--selection-string', dest="sel_string", action='store', type=str, default=["name CA"], nargs='+', help=("Selection string for the PDB file (default: name CA)"))
     parser.add_argument('-c','--score-cutoff', dest="score_cutoff", type=float, action='store', default=0.0, help="Rescuability score cut-off to detect rescuing positions (default: 0.0)")
     parser.add_argument('-d','--distance-cutoff', dest="distance_cutoff", type=float, action='store', default=15.0, help="Distance cut-off for the contact matrix (A; detault: 15.0)")
     parser.add_argument('-o', '--output', type=str, dest="outfile", action='store', default="normalized_score.dat", help="Name for the output file (default: normalized_score.dat)")
@@ -83,6 +83,8 @@ if __name__ == '__main__':
 
     if structure is None:
         log.error("Matrix file not found or not readable. Exiting...")
+
+    args.sel_string = " ".join(args.sel_string)
 
     try:
         selection = structure.select(args.sel_string)

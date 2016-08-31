@@ -211,12 +211,15 @@ if __name__ == "__main__":
     argparser.add_argument("-d", "--decimal", dest="decimal", type=int, 
                            default=3, action='store', help="Number of decimal\
                            places to be used in writing files (default: 3")
-    argparser.add_argument("-R", dest="reference_residue", type=str, default="protein and name CA", 
-                           help="Pathogenic mutation site (default: 'name CA')")
-    argparser.add_argument("-D", dest="dfs_residue", type=str, default="protein and name CA", 
-                           help="Secondary site (default: 'name CA'")
+    argparser.add_argument("-R", dest="reference_residue", type=str, default=["protein and name CA"], 
+                           help="Pathogenic mutation site (default: 'name CA')", nargs='+')
+    argparser.add_argument("-D", dest="dfs_residue", type=str, default=["protein and name CA"], 
+                           help="Secondary site (default: 'name CA'", nargs='+')
 
     args = argparser.parse_args()
+
+    args.reference_residue = " ".join(args.reference_residue)
+    args.dfs_residue = " ".join(args.dfs_residue)
 
     pd.confProDy(verbosity='warning')
     #pd.LOGGER._logger.setLevel(logging.WARNING)
