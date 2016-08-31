@@ -144,7 +144,7 @@ if __name__ == "__main__":
                          square fitting between the displaced and original \
                          geometries")
     parser.add_argument("-a", "--fit-selection", dest="fit_selection", 
-                        default="name CA", help="selection string that selects\
+                        default=["name CA"], help="selection string that selects\
                         the group that will be used for fitting")
     parser.add_argument("-d", "--conformational-distance", 
                         dest="conformational_distance", choices=scores.keys(), 
@@ -200,6 +200,9 @@ if __name__ == "__main__":
         log.error("You cannot specify covariance matrix and hessian at the same time. Exiting...")
         exit(1)
 
+    args.selection_string = " ".join(args.selection_string)
+    args.fit_selection = " ".join(args.selection_string)
+
     # 1. Parse PDB
     try:
         structure = pd.parsePDB(args.PDB)
@@ -207,9 +210,8 @@ if __name__ == "__main__":
         log.error("Couldn't parse your model file (%s); Exiting..." % args.PDB)
         exit(1)
 
-    assign_masses(structure)
 
-    args.selection_string = " ".join(args.selection_string)
+    assign_masses(structure)
 
     # 2. select atoms for building the model
     log.info("Selection string is %s" % args.selection_string)
