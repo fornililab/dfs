@@ -56,8 +56,6 @@ if __name__ == '__main__':
     parser.add_argument('-d','--distance-cutoff', dest="distance_cutoff", type=float, action='store', default=15.0, help="Distance cut-off for the contact matrix (A; detault: 15.0)")
     parser.add_argument('-o', '--output', type=str, dest="outfile", action='store', default="normalized_score.dat", help="Name for the output file (default: normalized_score.dat)")
     parser.add_argument('-P', '--pdb-output', type=str, dest="pdb_outfile", action='store', default=None, help="Name for the output PDB file (default: don't save)")
-    parser.add_argument('-x', '--pdb-percentile-output', type=float, dest="percentile", action='store', default=None, help="Percentile value to point out top compensatory residues (0 to 100)")
-
 
     args = parser.parse_args()
 
@@ -102,37 +100,18 @@ if __name__ == '__main__':
     except:
         log.error("Couldn't write file %s, Exiting..." % args.outfile)
 
-    res_indices = [ a.getResindex() for a in selection]
-
-    betas = []
-    this_i = -1
-    k = -1
-    for i,idx in enumerate(res_indices):
-        if idx != this_i:
-            k += 1
-            this_i = idx
-        betas.append(ra_power[k])
-
-        if args.percentile:
-            this_i = -1
-            k = -1
-            occupancies = []
-            cutoff = np.percentile(ra_power, args.percentile, interpolation='midpoint')
-            cutoff_bool = ra_power >= cutoff
-            for i,idx in enumerate(res_indices):
-                if idx != this_i:
-                    k += 1
-                    this_i = idx
-                occupancies.append(np.float(cutoff_bool[k]))
-
     if args.pdb_outfile is not None:
-        if args.percentile:
-            try:
-                pd.writePDB(args.pdb_outfile, structure, beta=betas, occupancy=occupancies)
-            except:
-                log.error("Couldn't write file %s, Exiting..." % args.pdb_outfile)
-        else:
-            try:
-                pd.writePDB(args.pdb_outfile, structure, beta=betas)
-            except:
-                log.error("Couldn't write file %s, Exiting..." % args.pdb_outfile)
+    
+        all_res_indices = structure.getResindices()
+        betas = np.zeros(all_res_indices.shape)
+        selected_res_indices = np.unique(selection.getResindices())
+        
+        for i, idx in enumerate(selected_res_indices):
+            sel_res_index = structure.select("resindex %d" % idx)
+            
+            betas[sel_res_index.getIndices()] = ra_power[i]
+        
+        try:
+            pd.writePDB(args.pdb_outfile, structure, beta=betas)
+        except:
+            log.error("Couldn't write file %s, Exiting..." % args.pdb_outfile)
