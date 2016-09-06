@@ -18,6 +18,9 @@ scripts_dir=../../scripts_src
 dfs=$scripts_dir"/dfs"
 compp=$scripts_dir"/compensatory_power"
 
+pymol_binary=$(which pymol)
+pymol_runfile="view_compensatory_power.pml"
+
 # structure to be used to generate the Anisotropic Network Model (ANM)
 pdb="1TSR.pdb"
 
@@ -43,7 +46,7 @@ np=8
 
 # command line
 echo now running: $dfs -p $pdb -r $pm_config -f $sm_config -c $c -g $g -s $selection --np $np -v
-$dfs -p $pdb -r $pm_config -f $sm_config -c $c -g $g -s $selection --np $np
+#$dfs -p $pdb -r $pm_config -f $sm_config -c $c -g $g -s $selection --np $np
 
 # Two matrix files have been saved: one that contains outcome of the calculation
 # in constant force mode and the other in constant displacement mode.
@@ -55,8 +58,20 @@ $dfs -p $pdb -r $pm_config -f $sm_config -c $c -g $g -s $selection --np $np
 # We feed both matrices calculated in the previous step to the compensatory_power
 # script in order to calculate the CP index on the average matrix:
 
-echo "now running: $compp -m fixed_force_scores.dat fixed_displacements_scores.dat -p $pdb -s $selection"
-$compp -m fixed_force_scores.dat fixed_displacements_scores.dat -p $pdb -s $selection
+echo "now running: $compp -m fixed_force_scores.dat fixed_displacements_scores.dat -p $pdb -s $selection" -P compensatory_power.pdb
+$compp -m fixed_force_scores.dat fixed_displacements_scores.dat -p $pdb -s $selection -P compensatory_power.pdb
 
-# The output file normalized_score.dat contains the per-residue Compensatory
-# power score.
+# The output file normalized_score.dat contains the per-residue compensatory 
+# power score. The same information is also stored in the B-factor field of 
+# the output pdb file "compensatory_power.pdb", only for those residues for
+# which the DFS score was calculated (i.e. those of chain A). 
+# We can visualize the compensatory power scores on the structure using the
+# compensatory_power.pdb file and PyMOL, simply by running the following 
+# command in the current directory (PyMOL must be installed and available
+# on command line):
+
+echo "now running: $pymol_binary -d run $pymol_runfile"
+$pymol_binary -d run $pymol_runfile
+
+# the color scale goes from blue to red, with blue representing lower values
+# and red representing higher ones. 
