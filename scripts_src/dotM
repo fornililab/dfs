@@ -34,7 +34,9 @@ Examples:
 
     dotM -f fixed_force_details.h5 -p original.pdb -R A5 -D A10 -r 1 -d 5
 
-
+Please notice that dotM requires some information written in the .h5 file
+to work, namely the perturbed_coordinates or fitted_perturbed_coordinates
+and raw_score_matrix.
 """
 
 outro=""
@@ -165,6 +167,16 @@ help="Use the coordinates in the PDB instead of the single-force structures to c
         func = tupleize
 
     fh = h5py.File(h5_fname, 'r')
+
+    if args.data_type not in fh.attrs['available_data'].split(','):
+        log.error("data type %s not found in details file! Exiting..." % args.data_type)
+        exit(1)
+    if RAW_SCORES not in fh.attrs['available_data'].split(','):
+        log.error("data type %s not found in details file! Exiting..." % RAW_SCORES)
+        exit(1)
+
+
+
 
     gamma = fh.attrs["gamma"]
     cutoff = fh.attrs["cutoff"]
