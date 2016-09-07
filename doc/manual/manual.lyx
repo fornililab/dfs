@@ -725,7 +725,7 @@ dotM calculates the Root Mean Square Inner Product (RMSIP) between the modes
 \begin_layout Standard
 \begin_inset Formula 
 \[
-RMSIP=\sqrt{\sum_{i=1}^{n}d\cdot v_{i}}
+RMSIP=\sqrt{\sum_{i=1}^{n}(d\cdot v_{i})^{2}}
 \]
 
 \end_inset
@@ -776,7 +776,9 @@ The script requires as input i) one details HDF5 file written by the main
 ).
  There's no need to specify the parameters for the ANM model on which normal
  modes are calculated, as they are read from the HDF5 file.
- 
+ Please notice that dotM requires some information written in the .h5 file
+ to work, namely the perturbed_coordinates or fitted_perturbed_coordinates
+ and raw_score_matrix.
 \end_layout
 
 \begin_layout Standard
