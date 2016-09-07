@@ -70,6 +70,9 @@ $compp -m fixed_force_scores.dat fixed_displacements_scores.dat -p $pdb -s $sele
 # command in the current directory (PyMOL must be installed and available
 # on command line):
 
+#################################################################################
+# 3 - visualize rescuability power using PyMOL
+
 echo "now running: $pymol_binary -d run $pymol_runfile"
 $pymol_binary -d run $pymol_runfile
 
