@@ -46,7 +46,7 @@ np=8
 
 # command line
 echo now running: $dfs -p $pdb -r $pm_config -f $sm_config -c $c -g $g -s $selection --np $np -v
-#$dfs -p $pdb -r $pm_config -f $sm_config -c $c -g $g -s $selection --np $np
+$dfs -p $pdb -r $pm_config -f $sm_config -c $c -g $g -s $selection --np $np
 
 # Two matrix files have been saved: one that contains outcome of the calculation
 # in constant force mode and the other in constant displacement mode.
