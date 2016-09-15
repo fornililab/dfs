@@ -46,7 +46,7 @@ np=8
 
 # command line
 echo now running: $dfs -p $pdb -r $pm_config -f $sm_config -c $c -g $g -s $selection --np $np -v
-#$dfs -p $pdb -r $pm_config -f $sm_config -c $c -g $g -s $selection --np $np
+$dfs -p $pdb -r $pm_config -f $sm_config -c $c -g $g -s $selection --np $np
 
 # Two matrix files have been saved: one that contains outcome of the calculation
 # in constant force mode and the other in constant displacement mode.
@@ -69,6 +69,9 @@ $compp -m fixed_force_scores.dat fixed_displacements_scores.dat -p $pdb -s $sele
 # compensatory_power.pdb file and PyMOL, simply by running the following 
 # command in the current directory (PyMOL must be installed and available
 # on command line):
+
+#################################################################################
+# 3 - visualize rescuability power using PyMOL
 
 echo "now running: $pymol_binary -d run $pymol_runfile"
 $pymol_binary -d run $pymol_runfile
