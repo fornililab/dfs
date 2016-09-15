@@ -60,9 +60,9 @@ if __name__ == "__main__":
     required_options.add_argument("-p", "--pdb", dest="original_pdb", type=str, 
                                   help="Original unperturbed PDB file", required=True)
     required_options.add_argument("-R", dest="reference_residue", type=str, default=None, 
-help="Pathogenic mutation site", required=True)
+help="Pathogenic mutation site", required=True, nargs='*')
     required_options.add_argument("-D", dest="dfs_residue", type=str, default=None, 
-help="Secondary site", required=True)
+help="Secondary site", required=True, nargs='*')
 
     parser.add_argument("-r", dest="r_score", default=max_s, type=str, 
 help="Direction of the force on the pathogenic mutation site (default: 'max'")
@@ -74,9 +74,10 @@ default=10, type=int)
 the calculation of displacements (default: %s)"%P_XYZ, default=P_XYZ, choices=(P_XYZ, FP_XYZ))
     parser.add_argument("-o", dest="output_file", help="name of text output\
 file (default: rmsip.txt)", default="rmsip.txt")
+    parser.add_argument("-e", dest="entropy_file", help="name of text output\
+file for Shannon entropies (see manual)", default="entropy.txt")
     parser.add_argument("-m", dest="do_disp_orig", default=False, action="store_true", 
 help="Use the coordinates in the PDB instead of the single-force structures to calculate displacements")
-
 
     args = parser.parse_args()
 
@@ -105,15 +106,14 @@ help="Use the coordinates in the PDB instead of the single-force structures to c
                                                                      args.reference_residue[1:]))
                 exit(1)
         else:
-            try:
+            if True:
                 ref_r_sel = s.select(args.reference_residue).getResindices()
-            except: 
+            else: 
                 log.error("Selection string for pathogenic mutation sites is wrong. Exiting...")            
                 
     if len(ref_r_sel) < 1:
         log.error("Couldn't find any residue in PDB file that matches option -R. Exiting...")
         exit(1)
-        
 
     if args.dfs_residue.isdigit():
         #dfs_r_sel = s.select("protein and resindex %s and name CA" % args.dfs_residue)
@@ -189,8 +189,15 @@ help="Use the coordinates in the PDB instead of the single-force structures to c
     except:
         log.error("Couldn't write file %s; exiting..." % args.output_file)
         
+    inv_vals = {}
 
     for pair in pairs:
+
+        if pair[1] not in inv_vals.keys():        
+            inv_vals[pair[1]] = {}
+        if pair[0] not in inv_vals[pair[1]].keys():
+            inv_vals[pair[1]][pair[0]] = []
+        
         path = "/%s/%s/" % (pair[0], pair[1])
         path_ref = "/%s/" % (pair[0])
 
@@ -228,13 +235,10 @@ help="Use the coordinates in the PDB instead of the single-force structures to c
 
         this_sum = 0
 
-        vals = []
-
         for i,m in enumerate(ds):
             this_val = np.dot(norm_displacements.flatten(), m.flatten())**2
-            vals.append(np.sqrt(this_val))
+            inv_vals[pair[1]][pair[0]].append(np.sqrt(this_val))
             this_sum += this_val
-
 
         rmsip = np.sqrt(this_sum)
 
@@ -243,5 +247,35 @@ help="Use the coordinates in the PDB instead of the single-force structures to c
                                                                          this_rs[where],
                                                                          rmsip ))
 
-        for i,v in enumerate(vals):
+        for i,v in enumerate(inv_vals[pair[1]][pair[0]]):
             out_fh.write("\tMode %i: %.3f\n" % (i,v))
+            
+    out_fh.close()
+
+    entropies = {}
+
+    try:
+        entropy_fh = open(args.entropy_file, 'w')
+    except:
+        log.error("Couldn't write file %s; exiting..." % args.entropy_file)
+
+    for k,v in inv_vals.iteritems():
+        pos_max = []
+        for l,w in v.iteritems():
+            if l == k:
+                continue
+            pos_max.append(np.argmax(w))
+        if len(pos_max) == 0:
+            continue
+        if len(pos_max) == 1:        
+            entropy_fh.write("%s-%d%s\t%.3f\n" % (s[k].getChid(), s[k].getResnum(), s[k].getResname(), 0.))
+            continue
+
+        pos_max = np.array(pos_max)
+        
+        pd = np.bincount(pos_max) / np.float64(pos_max.shape[0])
+        pd = pd[ pd != 0]
+        H = - np.sum(pd*np.log2(pd))
+        entropy_fh.write("%s-%d%s\t%.3f\n" % (s[k].getChid(), s[k].getResnum(), s[k].getResname(), H))
+        
+    entropy_fh.close()
