@@ -199,22 +199,25 @@ if __name__ == "__main__":
     required_options.add_argument("-p", "--pdb", type=str, dest="PDB", 
                            help="Original PDB structure", default=None, required=True)
 
-    argparser.add_argument("-w", "--write", dest="data_types", nargs='*', 
-                           type=str, choices=data_types, help="Choose which\
-                           data should be saved in the output file. 'all' \
-                           just saves everything is available.", 
+    argparser.add_argument("-w", "--write", dest="data_types", nargs='*', metavar="WRITABLE",
+                           type=str, choices=data_types, help="Choose \
+one or more data type that should be saved as the output files, among: \
+force_vectors, displacements, displacements_after_fit, perturbed_coordinates, \
+fitted_perturbed_coordinates, score_matrix, raw_score_matrix, \
+max_score_perturbed_coordinates, max_score_fitted_perturbed_coordinates, \
+scaling_factors. 'all' just saves everything is available. If no option \
+is given, data_muncher will just display metadata and quit.", 
                            default=None)
     argparser.add_argument("-t", "--textual", dest="use_dat", 
                            default=False, action='store_true', help="Write \
-                           data in simple text format instead of npz when\
-                           possible.")
+data in simple text format instead of npz when possible.")
     argparser.add_argument("-d", "--decimal", dest="decimal", type=int, 
                            default=3, action='store', help="Number of decimal\
-                           places to be used in writing files (default: 3")
+places to be used in writing files (default: 3)")
     argparser.add_argument("-R", dest="reference_residue", type=str, default=["protein and name CA"], 
-                           help="Pathogenic mutation site (default: 'name CA')", nargs='+')
+                           help="First site (default: 'name CA')", nargs='+')
     argparser.add_argument("-D", dest="dfs_residue", type=str, default=["protein and name CA"], 
-                           help="Secondary site (default: 'name CA'", nargs='+')
+                           help="Second site (default: 'name CA')", nargs='+')
 
     args = argparser.parse_args()
 

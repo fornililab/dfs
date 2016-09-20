@@ -20,6 +20,7 @@ import numpy as np
 import prody as pd
 import h5py
 import argparse
+from argparse import RawTextHelpFormatter
 from prody import LOGGER as log
 from itertools import product
 from dfsutils import P_XYZ, FP_XYZ, RAW_SCORES
@@ -54,7 +55,7 @@ def where_min(a,b,matrix):
 
 if __name__ == "__main__":
 
-    parser = argparse.ArgumentParser(description=intro, epilog=outro)
+    parser = argparse.ArgumentParser(description=intro, epilog=outro, formatter_class=RawTextHelpFormatter)
     required_options = parser.add_argument_group('required options')
 
     required_options.add_argument("-f", "--details", type=str, dest="h5_fname",
@@ -62,14 +63,14 @@ if __name__ == "__main__":
     required_options.add_argument("-p", "--pdb", dest="original_pdb", type=str, 
                                   help="Original unperturbed PDB file", required=True)
     required_options.add_argument("-R", dest="reference_residue", type=str, default=None, 
-help="Pathogenic mutation site", required=True, nargs='*')
+help="First sites to be considered (ProDy selection string)", required=True, nargs='*')
     required_options.add_argument("-D", dest="dfs_residue", type=str, default=None, 
-help="Secondary site", required=True, nargs='*')
+help="Second site to be considered (proDy selection string)", required=True, nargs='*')
 
     parser.add_argument("-r", dest="r_score", default=max_s, type=str, 
-help="Direction of the force on the pathogenic mutation site (default: 'max'")
+help="Direction of the force on the pathogenic mutation site ('max' or number; default: 'max')")
     parser.add_argument("-d", dest="d_score", default=max_s, type=str, 
-help="Direction of the force on the secondary site (default: 'max')")
+help="Direction of the force on the secondary site ('max' or number; default: 'max')")
     parser.add_argument("-n", dest="n_modes", help="number of ANM modes (default: 10)", 
 default=10, type=int)
     parser.add_argument("-t", dest="data_type", help="data type to be used for\
@@ -77,7 +78,7 @@ the calculation of displacements (default: %s)"%P_XYZ, default=P_XYZ, choices=(P
     parser.add_argument("-o", dest="output_file", help="name of text output\
 file (default: rmsip.txt)", default="rmsip.txt")
     parser.add_argument("-e", dest="entropy_file", help="name of text output\
-file for Shannon entropies (see manual)", default="entropy.txt")
+file for Shannon entropies (default: entropy.txt)", default="entropy.txt")
     parser.add_argument("-m", dest="do_disp_orig", default=False, action="store_true", 
 help="Use the coordinates in the PDB instead of the single-force structures to calculate displacements")
 
@@ -87,8 +88,12 @@ help="Use the coordinates in the PDB instead of the single-force structures to c
     args.dfs_residue = " ".join(args.dfs_residue)
 
     pd.confProDy(verbosity='warning')
-
-    s = pd.parsePDB(args.original_pdb)
+    
+    try:
+        s = pd.parsePDB(args.original_pdb)
+    except:
+        log.error("Couldn't read or parse PDB file. Exiting...")
+        exit(1)
 
     if args.reference_residue.isdigit():
         #ref_r_sel = s.select("protein and resindex %s and name CA" % args.reference_residue)
@@ -108,10 +113,11 @@ help="Use the coordinates in the PDB instead of the single-force structures to c
                                                                      args.reference_residue[1:]))
                 exit(1)
         else:
-            if True:
+            try:
                 ref_r_sel = s.select(args.reference_residue).getResindices()
-            else: 
-                log.error("Selection string for pathogenic mutation sites is wrong. Exiting...")            
+            except: 
+                log.error("Selection string for first sites is wrong. Exiting...")
+                exit(1)
                 
     if len(ref_r_sel) < 1:
         log.error("Couldn't find any residue in PDB file that matches option -R. Exiting...")
@@ -138,7 +144,8 @@ help="Use the coordinates in the PDB instead of the single-force structures to c
             try:
                 dfs_r_sel = s.select(args.dfs_residue).getResindices()
             except: 
-                log.error("Selection string for secondary mutation sites is wrong. Exiting...")
+                log.error("Selection string for second mutation sites is wrong. Exiting...")
+                exit(1)
     if len(dfs_r_sel) < 1:
         log.error("Couldn't find any residue in PDB file that matches option -D. Exiting...")
         exit(1)
@@ -150,23 +157,26 @@ help="Use the coordinates in the PDB instead of the single-force structures to c
 
     if str.isdigit(args.r_score):
         args.r_score = int(args.r_score)
+    elif args.r_score != max_s:
+        log.error("Option -r must be either a number or 'max'. Exiting...")
+        exit(1)
     if str.isdigit(args.d_score):
         args.d_score = int(args.d_score)
+    elif args.d_score != max_s:
+        log.error("Option -d must be either a number or 'max'. Exiting...")
+        exit(1)
 
     r_d_idx = [args.r_score, args.d_score]
 
-    if min_s in r_d_idx and max_s in r_d_idx:
-        log.error("you can't ask for maximum and minimum at the same time.")
-        exit(1)
-
     if args.r_score == max_s or args.d_score == max_s:
         func = where_max
-    elif args.r_score == min_s or args.d_score == min_s:
-        func = where_min
     else:
         func = tupleize
-
-    fh = h5py.File(h5_fname, 'r')
+    try:
+        fh = h5py.File(h5_fname, 'r')
+    except:
+        log.error("Couldn't read or parse details file. Exiting...")
+        exit(1)
 
     if args.data_type not in fh.attrs['available_data'].split(','):
         log.error("data type %s not found in details file! Exiting..." % args.data_type)
@@ -174,9 +184,6 @@ help="Use the coordinates in the PDB instead of the single-force structures to c
     if RAW_SCORES not in fh.attrs['available_data'].split(','):
         log.error("data type %s not found in details file! Exiting..." % RAW_SCORES)
         exit(1)
-
-
-
 
     gamma = fh.attrs["gamma"]
     cutoff = fh.attrs["cutoff"]

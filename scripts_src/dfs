@@ -36,9 +36,10 @@ of compensatory mutations in proteins as detailed in:
 
 The method uses Linear Response Theory on Anisotropic Network Models (ANM)
 to calculate a rescuability score R between pairs of residues, one that is 
-considered a Pathogenic Mutation (PM) to be compensated and another that is a 
-Secondary  Mutation site, which represents a potential compensatory site. 
-Positive values of R indicate a compensatory effect.
+considered to be a pathogenic mutation to be compensated (First Site, FS) 
+and another that is a secondary mutation site (Second Site, SM), which 
+represents a potential compensatory site. Positive values of R indicate
+a compensatory effect.
 
 By default, DFS will be run with the following options:
 
@@ -97,86 +98,87 @@ if __name__ == "__main__":
                                      formatter_class=RawTextHelpFormatter)
     required_options = parser.add_argument_group('required options')                                     
 
-    required_options.add_argument("-p" "--pdb", type=str, help="input PDB file",
+    required_options.add_argument("-p", "--pdb", type=str, help="input PDB file",
                                   required=True, dest="PDB")
 
     parser.add_argument("-s", "--selection", dest="selection_string", type=str, 
                         default=["name CA"], help="CHARMM-style selection of \
-                        atoms to be used to build the ANM model. The final \
-                        selection should contain at most one CA atom per \
-                        residue.", nargs='+')
+atoms to be used to build the ANM model. The final \
+selection should contain at most one CA atom per \
+residue.", nargs='+')
     parser.add_argument("-v", "--verbose", dest="verbose", 
                         help="toggle verbose mode", action='store_true',
                         default=False)
     parser.add_argument("-c", "--cutoff", dest="anm_cutoff", default=15.0, \
                         type=float, help="Distance cut-off for generating the \
-                        topology of ANM (in A; default is 15.0)")
+topology of ANM (in A; default is 15.0)")
     parser.add_argument("-g", "--gamma", dest="anm_gamma", default=1.0, 
                         type=float, help="Spring force constant for ANM \
-                        (default is 1.0)")
+(default is 1.0)")
     parser.add_argument("-m", "--write-hessian", dest="hessian_output", 
                         nargs='?', const="hessian.dat", type=str, default=None, 
                         help="Save Hessian matrix of the ANM model (default: \
-                        matrix.dat)")
+matrix.dat)")
     parser.add_argument("-M", "--load-hessian", dest="hessian_input", type=str, 
                         default=None, help="Load hessian matrix from file \
-                        instead of calculating it")
+instead of calculating it")
     parser.add_argument("-i", "--write-covariance", dest="covariance_output", 
                         nargs='?', const="covariance.dat", type=str, 
                         default=None, help="Save the covariance matrix from \
-                        the ANM used to calculate the effect of force \
-                        application (default: covariance.dat)")
+the ANM used to calculate the effect of force \
+application (default: covariance.dat)")
     parser.add_argument("-I", "--load-covariance", dest="covariance_input", 
                         type=str, default=None, help="Load covariance \
-                        matrix instead of calculating it. The hessian matrix \
-                        will not be calculated if this flag is used.")
+matrix instead of calculating it. The hessian matrix \
+will not be calculated if this flag is used.")
     parser.add_argument("-f", "--dfs", dest="dfs_config", default=None, 
-                        help="Configuration file for DFS runs (Secondary \
-                        sites. Defaults will be used if such a file is not \
-                        specified.)")
+                        help="Configuration file for DFS runs (Second \
+sites. Defaults will be used if such a file is not \
+specified.)")
     parser.add_argument("-r", "--ref-dfs", dest="ref_dfs_config", default=None,
-                        help="Configuration file for DFS runs (Pathogenic \
-                        Mutation sites). Defaults will be used if such a file \
-                        is not specified.")
+                        help="Configuration file for DFS runs (First \
+sites). Defaults will be used if such a file is not specified.")
     parser.add_argument("-F", "--fitting", dest="fitting_operation", 
                         default="none", action="store", type=str, 
-                        choices=fitting_operations.keys(), help="perform least\
-                         square fitting between the displaced and original \
-                         geometries")
+                        choices=fitting_operations.keys(), help="perform least \
+quare fitting between the displaced and original geometries")
     parser.add_argument("-a", "--fit-selection", dest="fit_selection", 
-                        default=["name CA"], help="selection string that selects\
-                        the group that will be used for fitting")
+                        default=["name CA"], help="selection string that selects \
+the group that will be used for fitting")
     parser.add_argument("-d", "--conformational-distance", 
                         dest="conformational_distance", choices=scores.keys(), 
                         help="which conformational distance measure will be \
-                        used (default: drmsd)", default="drmsd")
+used (default: drmsd)", default="drmsd")
     parser.add_argument("-n", "--np", dest="np", default=1, type=int, 
                         action="store", help="Number of cores to be used \
-                        for calculation")
+for calculation")
     parser.add_argument("-w", "--write", dest="write", nargs='*', type=str, 
-                        choices=writable_data, help="Choose which data should \
-                        be saved in the output details file. 'all' just saves \
-                        everything. Default is %s. This option will be ignored\
-                         if -o is not supplied" % P_XYZ, default=P_XYZ)
+                        metavar="WRITABLE",
+                        choices=writable_data, help="Space-separated list of \
+data that should be saved in the output details file. Choose between \
+force_vectors, displacements, displacements_after_fit, perturbed_coordinates, \
+fitted_perturbed_coordinates, score_matrix, raw_score_matrix, \
+conformational_distance_matrixes, scaling_factors. 'all' just saves \
+everything. Default is %s. This option will be ignored if -o is not supplied" % P_XYZ, default=P_XYZ)
     parser.add_argument("-o", "--output", dest="output_fname", 
                         default=None, type=str, action="store", 
                         help="Suffix to be used for the filename of the HDF5 \
-                        details file, in case -w/--write is specified")
+details file, in case -w/--write is specified")
     parser.add_argument("-t", "--force_mode", dest="force_mode", nargs='?', 
-                        type=str, default="both", choices=["fixed_forces, \
-                        fixed_displacementsfo, both"], help="Force mode to be \
-                        used (default: both)")
+                        type=str, default="both", choices=["fixed_forces",
+                        "fixed_displacements" "both"], help="Force mode to be \
+used (default: both)")
     parser.add_argument("-S", "--output-scores", dest="output_scores", 
                         default="scores", type=str,  action="store", 
                         help="Suffix for the filename of the rescuability score \
-                        matrices")
+matrices")
     parser.add_argument("-q", "--precision", dest="precision", default=-1, 
                         type=int, help="Number of decimal places to be used \
-                        in .h5 detail files (-1 for lossless; default: 3)")
+in .h5 detail files (-1 for lossless; default: 3)")
     parser.add_argument("-x", "--include-application-sites", 
                         dest="exclude_sites", action='store_false', 
                         default=True, help="Include force application sites \
-                        in the calculation of scores (by default it doesn't)")
+in the calculation of scores (by default it doesn't)")
                         
     args = parser.parse_args()
     
