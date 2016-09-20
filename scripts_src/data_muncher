@@ -212,7 +212,7 @@ is given, data_muncher will just display metadata and quit.",
                            default=False, action='store_true', help="Write \
 data in simple text format instead of npz when possible.")
     argparser.add_argument("-d", "--decimal", dest="decimal", type=int, 
-                           default=3, action='store', help="Number of decimal\
+                           default=3, action='store', help="Number of decimal \
 places to be used in writing files (default: 3)")
     argparser.add_argument("-R", dest="reference_residue", type=str, default=["protein and name CA"], 
                            help="First site (default: 'name CA')", nargs='+')

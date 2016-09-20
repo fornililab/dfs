@@ -166,7 +166,7 @@ everything. Default is %s. This option will be ignored if -o is not supplied" % 
 details file, in case -w/--write is specified")
     parser.add_argument("-t", "--force_mode", dest="force_mode", nargs='?', 
                         type=str, default="both", choices=["fixed_forces",
-                        "fixed_displacements" "both"], help="Force mode to be \
+                        "fixed_displacements", "both"], help="Force mode to be \
 used (default: both)")
     parser.add_argument("-S", "--output-scores", dest="output_scores", 
                         default="scores", type=str,  action="store", 
