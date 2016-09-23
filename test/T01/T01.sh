@@ -6,13 +6,11 @@
 # path and configuration settings
 dfs=`which dfs`
 
-# pathogenic mutation site (PM) configuration files
-pm_config=../T00/config_file_pathogenic_mut.ini
-# secondary mutation site (PM) configuration files
-sm_config=../T00/config_file_secondary_mut.ini
+# forces configuration files
+config=../T00/forces.ini
 
 # configuration file settings
-cfg_settings="-r $pm_config -f $sm_config"
+cfg_settings="-f $config"
 
 # structure to be used to generate the Anisotropic Network Model (ANM)
 pdb="../T00/original.pdb"

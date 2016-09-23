@@ -115,10 +115,10 @@ class ForceSet:
                                 z)).T * final_r
 
             if len(args) == 4:
-                if args[3] == 'c':
+                if args[3] == 'dfs':
                     points = np.repeat(points, points.shape[0], axis=0)
                     self.metadata["ordering"] = "c"
-                elif args[3] == 'r':
+                elif args[3] == 'ref':
                     points = np.concatenate([points] * points.shape[0])
                     self.metadata["ordering"] = "r"
                 else:
@@ -557,10 +557,12 @@ class LsqFitting(Fitting):
     def compute_transformation(self):
         self.transformation = prody.calcTransformation(self.mobile, self.target)
 
-def parse_force_string(s):
+def parse_force_string(s, type=None):
     args = s.strip().split()
     if len(args) < 2:
         raise
+    if type:
+        args.append(type)
     return args
 
 def _worker(work_package):
@@ -619,7 +621,6 @@ class DFSJob:
                     atoms,
                     original,
                     covariance,
-                    reference_config_file,
                     config_file,
                     fitting_operation=None,
                     fitting_string="",
@@ -647,8 +648,7 @@ class DFSJob:
                     log.warning("saving fitted coordinates was requested, but no fitting option specified. Will save perturbed non-fitted coordinates instead.")
                     self.do_write.append(P_XYZ)
 
-        reference_force_sets, reference_options = self.parse_config_file(reference_config_file, self.structure, self.atoms)
-        force_sets,           options           = self.parse_config_file(config_file, self.structure, self.atoms)
+        reference_force_sets, force_sets, config_options = self.parse_config_file(config_file, self.structure, self.atoms)
 
         #print "valssss", reference_force_sets.values()
         ref_combinations = itertools.product(*reference_force_sets.values())
@@ -723,17 +723,27 @@ class DFSJob:
     def parse_config_file(self, config_file, structure, atoms):
         # XXX check uniqueness of names
 
-        atom_sets_section = "atom sets"
-        force_sets_section = "force sets"
+        reference_atom_sets_section = "first sites atom sets"
+        reference_force_sets_section = "first sites force sets"
+
+        dfs_atom_sets_section = "second sites atom sets"
+        dfs_force_sets_section = "second sites force sets"
+
         options_section = "options"
 
         recognized_option_types = {}
         recognized_option_defaults = {}
         options = recognized_option_defaults.copy()
 
-        required_sections = set([atom_sets_section, force_sets_section])
-        atom_sets = {}
-        force_sets = {}
+        required_sections = set([reference_atom_sets_section,
+                                 reference_force_sets_section,
+                                 dfs_atom_sets_section,
+                                 dfs_force_sets_section])
+        
+        reference_atom_sets = {}
+        reference_force_sets = {}
+        dfs_atom_sets = {}
+        dfs_force_sets = {}
 
         parser = cp.ConfigParser()
         parser.SECTCRE = re.compile(r"\[ *(?P<header>[^]]+?) *\]") # To remove trailing white space error thing
@@ -755,8 +765,8 @@ class DFSJob:
                 else:
                     options[name] = parser.get(options_section, name)
 
-        if len(required_sections & set(parser.sections())) == 2: # combinations mode # XXX all of none these sections must be present
-            for name, s in parser.items(atom_sets_section):
+        if len(required_sections & set(parser.sections())) == 4: # combinations mode # XXX all of none these sections must be present
+            for name, s in parser.items(reference_atom_sets_section):
                 try:
                     this_set = AtomSet(structure.select(s))
                 except:
@@ -771,26 +781,64 @@ class DFSJob:
                     log.error("Your selection string \"%s\" resulted in a selection which is not included in the ANM model." % s )
                     exit(1)
 
-                atom_sets[name] = this_set
-                force_sets[name] = []
+                reference_atom_sets[name] = this_set
+                reference_force_sets[name] = []
+                
+                print reference_atom_sets, "AAZ"
 
-            for name, s in parser.items(force_sets_section):
-                if name not in atom_sets.keys():
+            for name, s in parser.items(reference_force_sets_section):
+                if name not in reference_atom_sets.keys():
                     log.error("Force set %s was defined, but no correspondent atom sets found." % name)
                     exit(1)
                 try:
-                    args = parse_force_string(s)
+                    args = parse_force_string(s, type="ref")
                 except:
                     log.error("Force set %s wasn't defined properly." % name)
                     exit(1)
 
-                for atom in atom_sets[name].atom_list:
+                for atom in reference_atom_sets[name].atom_list:
                     try:
-                        force_sets[name].append(ForceSet(atom, name, *args))
+                        reference_force_sets[name].append(ForceSet(atom, name, *args))
                     except:
                         log.error("Couldn't calculate force set for atom %s in set %s" % (atom, name))
                         exit(1)
-            return force_sets, options
+
+            for name, s in parser.items(dfs_atom_sets_section):
+                try:
+                    this_set = AtomSet(structure.select(s))
+                except:
+                    log.error("Selection string \"%s\" for set %s was invalid." % (s, name))
+                    exit(1)
+
+                if not this_set:
+                    log.error("Your selection string %s resulted in no atoms being selected in your structure." % s )
+                    exit(1)
+
+                if not this_set.selection in atoms:
+                    log.error("Your selection string \"%s\" resulted in a selection which is not included in the ANM model." % s )
+                    exit(1)
+
+                dfs_atom_sets[name] = this_set
+                dfs_force_sets[name] = []
+
+            for name, s in parser.items(dfs_force_sets_section):
+                if name not in dfs_atom_sets.keys():
+                    log.error("Force set %s was defined, but no correspondent atom sets found." % name)
+                    exit(1)
+                try:
+                    args = parse_force_string(s, type="dfs")
+                except:
+                    log.error("Force set %s wasn't defined properly." % name)
+                    exit(1)
+
+                for atom in dfs_atom_sets[name].atom_list:
+                    try:
+                        dfs_force_sets[name].append(ForceSet(atom, name, *args))
+                    except:
+                        log.error("Couldn't calculate force set for atom %s in set %s" % (atom, name))
+                        exit(1)
+
+            return reference_force_sets, dfs_force_sets, options
 
         else:
             # XXX implement custom cases

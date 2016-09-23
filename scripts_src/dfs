@@ -131,13 +131,9 @@ application (default: covariance.dat)")
                         type=str, default=None, help="Load covariance \
 matrix instead of calculating it. The hessian matrix \
 will not be calculated if this flag is used.")
-    parser.add_argument("-f", "--dfs", dest="dfs_config", default=None, 
-                        help="Configuration file for DFS runs (Second \
-sites. Defaults will be used if such a file is not \
-specified.)")
-    parser.add_argument("-r", "--ref-dfs", dest="ref_dfs_config", default=None,
-                        help="Configuration file for DFS runs (First \
-sites). Defaults will be used if such a file is not specified.")
+    parser.add_argument("-f", "--forces", dest="config", default=None, 
+                        help="Configuration file for DFS runs. Defaults will \
+be used if such a file is not specified.)")
     parser.add_argument("-F", "--fitting", dest="fitting_operation", 
                         default="none", action="store", type=str, 
                         choices=fitting_operations.keys(), help="perform least \
@@ -308,18 +304,12 @@ in the calculation of scores (by default it doesn't)")
 
     if args.force_mode == "fixed_force" or args.force_mode == "both":
 
-        if args.ref_dfs_config is None:
-            log.info("Default settings will be used for forces on pathogenic \
-    mutation sites as no input file was provided.")
-            ref_config = StringIO.StringIO(default_ref_config_string)
+        if args.config is None:
+            log.info("Default settings will be used for forces as no input \
+file was provided.")
+            config = StringIO.StringIO(default_config_string)
         else:
-            ref_config = args.ref_dfs_config            
-        if args.dfs_config is None:
-            log.info("Default settings will be used for forces on secondary \
-    mutation sites as no input file was provided.")
-            config =     StringIO.StringIO(default_config_string)
-        else:
-            config = args.dfs_config
+            config = args.config
             
         if do_write is not None:
             output_fname = "%s_%s" % ("fixed_force", args.output_fname)
@@ -333,7 +323,6 @@ in the calculation of scores (by default it doesn't)")
                             atoms,
                             atoms,
                             np.matrix(covariance),
-                            ref_config,
                             config,
                             fitting_operation   = fitting_operations[args.fitting_operation],
                             fitting_string      = args.fit_selection,
@@ -357,18 +346,12 @@ in the calculation of scores (by default it doesn't)")
 
     if args.force_mode == "fixed_displacements" or args.force_mode == "both":
 
-        if args.ref_dfs_config is None:
-            log.info("Default settings will be used for forces on pathogenic \
-    mutation sites as no input file was provided.")
-            ref_config = StringIO.StringIO(default_ref_config_string)
+        if args.config is None:
+            log.info("Default settings will be used for forces as no input \
+file was provided.")
+            config = StringIO.StringIO(default_config_string)
         else:
-            ref_config = args.ref_dfs_config            
-        if args.dfs_config is None:
-            log.info("Default settings will be used for forces on secondary \
-    mutation sites as no input file was provided.")
-            config =     StringIO.StringIO(default_config_string)
-        else:
-            config = args.dfs_config
+            config = args.config
 
         if do_write is not None:
             output_fname = "%s_%s" % ("fixed_displacements", args.output_fname)
@@ -381,7 +364,6 @@ in the calculation of scores (by default it doesn't)")
                         atoms,
                         atoms,
                         np.matrix(covariance),
-                        ref_config,
                         config,
                         fitting_operation   = fitting_operations[args.fitting_operation],
                         fitting_string      = args.fit_selection,
