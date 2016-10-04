@@ -35,18 +35,16 @@ c=15.0
 # force constant for ANM harmonic potential (gamma)
 g=1.0
 
-# pathogenic mutation site (PM) and Secondary mutation site (SM) 
-# configuration files. Read the files themselves for information
-# on their format and syntax. 
-pm_config=config_file_pathogenic_mut.ini
-sm_config=config_file_secondary_mut.ini
+# Forces configuration file. Read the file itself for information
+# on its format and syntax. 
+forces_config=forces.ini
 
 # number of cores to be used 
 np=8
 
 # command line
-echo now running: $dfs -p $pdb -r $pm_config -f $sm_config -c $c -g $g -s $selection --np $np -v
-$dfs -p $pdb -r $pm_config -f $sm_config -c $c -g $g -s $selection --np $np
+echo now running: $dfs -p $pdb -f $forces_config -c $c -g $g -s $selection --np $np -v
+$dfs -p $pdb -f $forces_config -c $c -g $g -s $selection --np $np
 
 # Two matrix files have been saved: one that contains outcome of the calculation
 # in constant force mode and the other in constant displacement mode.
