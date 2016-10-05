@@ -102,10 +102,10 @@ if __name__ == "__main__":
                                   required=True, dest="PDB")
 
     parser.add_argument("-s", "--selection", dest="selection_string", type=str, 
-                        default=["name CA"], help="CHARMM-style selection of \
+                        default=["protein and name CA"], help="CHARMM-style selection of \
 atoms to be used to build the ANM model. The final \
 selection should contain at most one CA atom per \
-residue.", nargs='+')
+residue. Default is: 'protein and name CA'", nargs='+')
     parser.add_argument("-v", "--verbose", dest="verbose", 
                         help="toggle verbose mode", action='store_true',
                         default=False)
