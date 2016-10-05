@@ -75,21 +75,16 @@ fitting_operations =    {   "lsq_fit" : LsqFitting,
                             "none" : None
                         }
 
-default_ref_config_string="""[ atom sets ]
-
-refset1:   name CA
-
-[ force sets ]
-
-refset1:   fibonacci_lattice 12 10.0 r"""
-
-default_config_string="""[ atom sets ]
-
-set2:   name CA
-
-[ force sets ]
-
-set2:   fibonacci_lattice 12 10.0 c"""
+default_config_string="""[ first sites atom sets ]
+refset1:        name CA and protein
+[ first sites force sets ]
+refset1:        fibonacci_lattice 12 10
+[ second sites atom sets ]
+set1:   name CA and protein
+[ second sites force sets ]
+set1:   fibonacci_lattice 12 10
+[ options ]
+"""
 
 if __name__ == "__main__":
 
