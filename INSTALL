@@ -1,46 +1,6 @@
-Prerequisites #
 ###############
-
-DFS is a collection of Python 2.7 and Cython libraries and scripts and is 
-supported on Linux and OS X/macOS. Installing the dfs package and running the
-scripts has the following
-requirements:
-
-* Python 2.x (>= 2.7)
-* Cython >= 0.18
-* Python 2 packages: setuptools, numpy, h5py, prody
-* Python and numpy headers
-* a C compiler (as GNU gcc)
-
-The installation instructions that follow also cover the installation  of 
-prerequisites for the most common cases; please refer to your system 
-administrator or specific OS documentation in case these are not approriate
-for your system.
-
-Installation #
-##############
-
-Linux - Debian-based (Debian, Ubuntu and others)
--------------------------------------------------
-
-On Ubuntu, the prerequisites can be installed using the package manager apt:
-
-    sudo apt-get update && sudo apt-get install cython python-dev \
-    python-numpy python-setuptools python-pip python-h5py build-essential
-
-Please note that all the commands that start with "sudo" need to be run as a 
-super-user in some Debian-based distributions.
-
-Once the installation of these packages is complete, you need to install the 
-prody package separately through pip, either system-wide:
-
-    sudo pip install prody
-
-or locally, as a normal user:
-    
-    pip install prody --user
-
-Next, you need to install the DFS package itself.
+Download      #
+###############
 
 The source files for the most current distribution of DFS are available at 
 [LINK]. You can either download the zip package or clone it in any given 
@@ -52,91 +12,121 @@ If you have downloaded the zip package you need to unzip it:
 
     unzip dfs.zip
 
-and enter the dfs directory on the terminal. As you're reading this, you have
-most likely already performed this last step. The dfs package can then be 
-installed system-wise by running in the dfs installation directory:
+###############
+Prerequisites #
+###############
+
+DFS is a collection of Python and Cython libraries and scripts. The software is
+avalalble for Linux and OS X/macOS. Installing and running the DFS scripts has
+the following requirements:
+
+* Python 2.x (>= 2.7)
+* Cython >= 0.18
+* Python 2 packages: setuptools, numpy, h5py, prody
+
+The installation instructions for prerequisite packages are included in the
+following section. These should cover standard Linux and OS X/macOS
+configurations. Please refer to your system administrator or the relevant OS
+documentation for specific cases not covered here.
+
+###############
+Installation  #
+###############
+
+Linux - Debian-based (Debian, Ubuntu and others)
+-------------------------------------------------
+
+Please note that all the commands that start with "sudo" requires to be run by
+user with adminstrative permissions in most of Debian-based distributions.
+
+1. Installation of Python and Cython packages using the package manager apt:
+
+    sudo apt-get update && sudo apt-get install cython python-dev \
+    python-numpy python-setuptools python-pip python-h5py build-essential
+
+2. Installation of prody package using pip
+   (system-wide case):
+
+    sudo pip install prody
+
+   (local user case):
+    
+    pip install prody --user
+
+3. Installation of the DFS package. Enter the dfs directory: 
+   (system-wide case):
 
     sudo python2.7 setup.py install --record files.txt
 
-or, on a per-user basis:
+   (local user case):
 
     python2.7 setup.py install --user --record files.txt
 
-this will build the Cython/C files as well as copy the installation files in 
+This will build the Cython/C files as well as copy the installation files in
 their destination directories. If you have installed the package system-wise,
 the user-executable scripts will already be available to the user as they are
-copied by default in /usr/local/bin. If the installation has been performed
-as a normal user, the files are usually located somewhere inside the 
-current user's home directory $HOME (usually 
-$HOME/.local/lib/python2.7/site-packages/dfsutils for the library files and 
-$HOME/.local/bin/ for the scripts). The location of these files can be
-verified by reading the content of files.txt in the installation
-directory, in which the installation location of each file contained in the 
-package is written during the installation. 
+copied by default in /usr/local/bin. If the installation has been performed as a
+normal user, the files are usually located inside the current user's home
+directory $HOME (usually $HOME/.local/lib/python2.7/site-packages/dfsutils for
+the library files and $HOME/.local/bin/ for the scripts). The location of these
+files can be verified by reading the content of files.txt in the installation
+directory, in which the installation location of each file contained in the
+package is recorded during the installation. 
 
-It is advisable to add the scripts directory in the PATH system variable so 
-that they are available from the whole filesystem:
+It is advisable to add the scripts directory in the PATH system variable.
+Assuming that your script files are located in $HOME/.local/bin/ this can be
+done with:
 
 	export PATH=$PATH:$HOME/.local/bin/
-
-assuming that your script files are located in $HOME/.local/bin/ .
 
 This line can also be added to the .profile or .bashrc file in the user's $HOME
 so that it is run every time a shell is opened.
 
+OS X / macOS
+------------
 
-OS X or macOS
---------------
-
-First, in order to build the final packages, it is advisable to install 
-Xcode from the App store, and then install the command-line tools by running:
+The installation of DFS on an OS X / macOS computer requires Xcode with
+command-line tools. Xcode can be obtained from the App store. The command line
+tools can be installed by running:
 
     sudo xcode-select --install
 
-and following the on-screen instructions. Python packages can be easily 
-installed using pip. Pip itself can be installed by running:
+and following the on-screen instructions.
+
+1. Installation of Python and Cython packages:
 
     sudo easy_install pip
-
-then:
-
     sudo pip install numpy h5py prody
 
-Alternatively, one can install the MacPorts package system (http://macports.org)
-and then install the relevant packages from there:
+   Alternatively, if the MacPorts package system (http://macports.org) is available:
 
     sudo port selfupdate && sudo port install py27-setuptools py27-numpy \
     py27-cython py27-pip py27-setuptools py27-h5py
     
-However, the prody package still needs to be installed using pip:
+2. Installation of prody package using pip
 
-    sudo pip-2.7 install numpy h5py prody
+    sudo pip-2.7 install prody
 
-After the prerequisites are installed, the installation of DFS itself can be 
-performed as in Linux. Namely, you first need to download the zip package of 
-DFS and unzip it:
-
-    unzip dfs.zip
-
-then enter the dfs directory on the terminal. As you're reading this, you have
-most likely already performed this last step. The dfs package can then be 
-installed system-wise by running in the dfs installation directory:
+3. Installation of the DFS package. Enter the dfs directory: 
+   (system-wide case):
 
     sudo python2.7 setup.py install --record files.txt
 
-or, on a per-user basis:
+   (local user case):
 
-    python2.7 install --user --record files.txt
+    python2.7 setup.py install --user --record files.txt
 
-this will build the Cython/C files as well as copy the installation files in 
+
+This will build the Cython/C files as well as copy the installation files in
 their destination directory. The position on the file-systems of the installed
-files can vary, depending on whether you are using the system Python installa-
-tion or the one shipped with MacPorts. However, you will be able to identify
-the location of the script files by looking into the files.txt log file
-which is written in the installation directory. Once you have determined the
-location of the script files in your system it is advisable to add the scripts 
-directory in the PATH system variable so that they are available from the 
-whole filesystem:
+files can vary, depending on whether you are using the system Python
+installation or the one shipped with MacPorts. However, you will be able to
+identify the location of the script files by looking into the files.txt log file
+which is written in the installation directory.
+
+It is advisable to add the scripts directory in the PATH system variable.
+Assuming that your script files are located in $HOME/.local/bin/ this can be
+done with (where /path/to/files is the location reported in files.txt):
 
 	export PATH=$PATH:/path/to/files/
 
