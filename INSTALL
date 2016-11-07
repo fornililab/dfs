@@ -77,10 +77,10 @@ It is advisable to add the scripts directory in the PATH system variable.
 Assuming that your script files are located in $HOME/.local/bin/ this can be
 done with:
 
-	export PATH=$PATH:$HOME/.local/bin/
+	export PATH=$HOME/.local/bin/:$PATH
 
-This line can also be added to the .profile or .bashrc file in the user's $HOME
-so that it is run every time a shell is opened.
+This line can also be added to the .profile or .bash_profile file in the user's
+$HOME so that the updated search PATH is available to any shell terminal opened. 
 
 OS X / macOS
 ------------
@@ -128,7 +128,7 @@ It is advisable to add the scripts directory in the PATH system variable.
 Assuming that your script files are located in $HOME/.local/bin/ this can be
 done with (where /path/to/files is the location reported in files.txt):
 
-	export PATH=$PATH:/path/to/files/
+	export PATH=/path/to/files/:$PATH
 
-this line can also be added to the .profile or .bashrc file in the user's $HOME
-so that it is run every time a shell is opened.
+this line can also be added to the .profile or .bash_profile file in the user's
+$HOME so that the updated search PATH is available to any shell terminal opened. 
