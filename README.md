@@ -1,31 +1,52 @@
-The DFS package implements the Double Force Scanning method for the identification 
-of compensatory mutations in proteins as detailed in:
+# DFS
 
-<paper>
+The **D**ouble **F**orce **S**canning (**DFS**) is a computational method to
+predict compensatory mutations in proteins. The effect of mutations are
+represented by forces calculated using Linear Response Theory on Anisotropic
+Network Models (ANM).
 
-The method uses Linear Response Theory on Anisotropic Network Models (ANM) to 
-calculate a rescuability score R between pairs of residues, one that is 
-considered a Pathogenic Mutation (PM) to be compensated and another that is a 
-Secondary  Mutation site, which represents a potential compensatory site. 
-Positive values of R indicate a compensatory effect. 
+Given a Pathogenic Mutation (PM) all the residues in the protein are scanned to
+identify secondary sites for candidate Compensatory Mutations (CM). For each
+pair of residues (PM and secondary site) a rescuability score R is calculated.
+Secondary sites with positive values of R indicate a putative compensatory
+effect. Finally for each secondary site a comprehensive value of Compensatory
+Power (CP) is calculated. Residues can be ranked according to their CP.
 
-The installation package includes a Python module (dfsutils) that comprises the 
-main classes and functions, as well as a number of user-accessible scripts that
-can be run by the user in order to run calculations using the DFS method as well
-as analyzing the results. 
+## Availability
 
-The following scripts are included in the package:
+The program is made available under the GNU Public License for academic
+scientific purposes and under the condition that proper acknowledgement is made
+to the authors of the program in publications resulting from the use of the
+program. Please see [LICENSE](LICENSE) for details.
 
-    * dfs - the main program, used to run calculations using the DFS method
-    * compensatory_power - calculate per-residue compensatory power index
-    * data_muncher - write data from details HDF5 file to more common formats
-    * dotM - calculate RMSIP between vector spaces from DFS
+DFS is available on [GitHub](https://github.research.its.qmul.ac.uk/eex058/dfs
+"DFS").  The distribution includes a Python module (dfsutils) that comprises the
+main classes and functions, as well as the following scripts:
 
-Please check the files in the "doc" directory for relevant 
-documentation and instructions for each script. A tutorial is also included.
-Each script also hes a summary help section which is accessible by running:
+ * **dfs**: runs the Double Force Scanning calculations
+ * **compensatory_power**: calculates per-residue Compensatory Power index
+ * **data_muncher**: extracts data from the compressed HDF5 file
+ * **dotM**: calculates the RMSIP between force and motion vectors
 
-	script --help 
+A summary help can be obtained with the --help option, e.g.:
 
-Happy simulating!
+`dfs --help`
 
+## Installation
+
+Please refer to the [INSTALL](INSTALL) file in the distribution.
+
+A [test](test) directory is provided to check the functionallity of your
+installation.
+
+## Documentation
+
+Please refer to the [doc](doc) directory in the distribution.
+A step-by-step [tutorial](doc/tutorial) is also included.
+ 
+## Citation
+
+If you publish results produced with the DFS or develop methods based on the DFS
+code, please cite the following paper:
+
+<reference>
