@@ -18,6 +18,9 @@ pdb="../T00/original.pdb"
 # input file settings
 input_settings="-p $pdb"
 
+# selection of atoms to be used for the ANM model
+selection="chain A and protein and name CA"
+
 ######################################################################
 # ANM settings
 # distance cut-off for ANM
@@ -47,7 +50,7 @@ outsuffix="-S scores_T01"
 output_settings="$write $precision $outsuffix"
 ######################################################################
 # command line
-$dfs $cfg_settings $anm_settings -s "name CA" $output_settings $input_settings >& log.T01.log
+$dfs $cfg_settings $anm_settings -s $selection $output_settings $input_settings >& log.T01.log
 
 ######################################################################
 # test check

@@ -17,8 +17,6 @@ input_settings="-m $matrix -p $pdb"
 
 ######################################################################
 # output settings
-# percentile for top compensatory mutations
-percentile="-x 95"
 
 # output prefix
 outprefix="T02"
@@ -30,7 +28,7 @@ outputscore="$outprefix.fixed_force_normalized_score.dat"
 outputpdb="$outputprefix.fixed_force_normalized_score.pdb" 
 
 # output_settings
-output_settings="-o $outputscore -P $outputpdb $percentile"
+output_settings="-o $outputscore -P $outputpdb"
 
 ######################################################################
 # check availability of input file
