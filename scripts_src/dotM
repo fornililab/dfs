@@ -1,4 +1,4 @@
-usr/bin/env python
+#! /usr/bin/env python
 # dotM - calculate RMSIP between dfs displacements and normal modes.
 # Copyright (C) 2015 Matteo Tiberti <matteo.tiberti@gmail.com>
 #
