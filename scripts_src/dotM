@@ -97,7 +97,12 @@ help="Use the coordinates in the PDB instead of the single-force structures to c
 
     if args.reference_residue.isdigit():
         #ref_r_sel = s.select("protein and resindex %s and name CA" % args.reference_residue)
-        ref_r_sel = np.array([int(args.reference_residue)])
+        args.reference_residue = int(args.reference_residue)
+        if args.reference_residue > s.numResidues() or args.reference_residue < 0:
+            log.error("Residue number provided as first site is not consistent with the provided structure. Exiting...")
+            exit(1)
+        ref_r_sel = np.array([args.reference_residue])
+
     else:
         if len(args.reference_residue.strip().split()) == 1 and args.reference_residue[0].isalpha() \
         and args.reference_residue[0].isupper() and args.reference_residue[1:].lstrip("-").isdigit():
@@ -125,7 +130,11 @@ help="Use the coordinates in the PDB instead of the single-force structures to c
 
     if args.dfs_residue.isdigit():
         #dfs_r_sel = s.select("protein and resindex %s and name CA" % args.dfs_residue)
-        dfs_r_sel = np.array([int(args.dfs_residue)])
+        args.dfs_residue = int(args.dfs_residue)
+        if args.dfs_residue > s.numResidues() or args.dfs_residue < 0:
+            log.error("Residue number provided as second site is not consistent with the provided structure. Exiting...")
+            exit(1)
+        dfs_r_sel = np.array([args.dfs_residue])
     else:
         if len(args.dfs_residue.strip().split()) == 1 and args.dfs_residue[0].isalpha() \
         and args.dfs_residue[0].isupper() and args.dfs_residue[1:].lstrip("-").isdigit():
