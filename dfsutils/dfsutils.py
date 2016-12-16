@@ -851,6 +851,10 @@ class DFSJob:
             self.min_score_matrix[idxs] = min_results
             self.max_score_matrix[idxs] = max_results
 
+        np.fill_diagonal(self.score_matrix, 0.)
+        np.fill_diagonal(self.min_score_matrix, 0.)
+        np.fill_diagonal(self.max_score_matrix, 0.)
+
         return (self.score_matrix, self.min_score_matrix, self.max_score_matrix)
 
     def run(self, nprocs=1, details_output_fname=None, metadata=None, precision=5, read_details=False):
