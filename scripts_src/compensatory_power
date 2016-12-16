@@ -38,7 +38,10 @@ def get_contacts(s, dist_co):
     return np.sum(pd.buildDistMatrix(s) <= dist_co, axis=0, dtype=np.float)-1
 
 def get_raw_index(m, score_co, axis=0):
-    return np.sum(m >= score_co, axis=axis, dtype=np.float)
+    return np.sum(m > score_co, axis=axis, dtype=np.float)
+
+def rescale_minmax(vals):
+    return (vals - np.min(vals)) / (np.max(vals) - np.min(vals))
 
 if __name__ == '__main__':
 
@@ -55,10 +58,12 @@ if __name__ == '__main__':
 
     parser.add_argument('-t', '--score-type', type=str, dest="type", action='store', choices=["rescue_ability", "rescuability"], default="rescue_ability", help="Use rescue_ability or rescuability values (default: rescue_ability)")
     parser.add_argument('-s', '--selection-string', dest="sel_string", action='store', type=str, default=["protein and name CA"], nargs='+', help=("Selection string for the PDB file (default: 'protein and name CA')"))
-    parser.add_argument('-c','--score-cutoff', dest="score_cutoff", type=float, action='store', default=0.0, help="Rescuability score cut-off to detect rescuing positions (default: 0.0)")
-    parser.add_argument('-d','--distance-cutoff', dest="distance_cutoff", type=float, action='store', default=15.0, help="Distance cut-off for the contact matrix (A; detault: 15.0)")
+    parser.add_argument('-c', '--score-cutoff', dest="score_cutoff", type=float, action='store', default=0.0, help="Rescuability score cut-off to detect rescuing positions (default: 0.0)")
+    parser.add_argument('-d', '--distance-cutoff', dest="distance_cutoff", type=float, action='store', default=15.0, help="Distance cut-off for the contact matrix (A; detault: 15.0)")
     parser.add_argument('-o', '--output', type=str, dest="outfile", action='store', default="normalized_score.dat", help="Name for the output file (default: normalized_score.dat)")
+    parser.add_argument('-q', '--output-pairs', type=str, dest="pairs_outfile", action='store', default="fs_ss_pairs.dat", help="For each first-site residues, write identified second-sites according to the input matrix(es)")    
     parser.add_argument('-P', '--pdb-output', type=str, dest="pdb_outfile", action='store', default=None, help="Name for the output PDB file (default: don't save)")
+    parser.add_argument('-r', '--no-rescale', dest="rescale", action="store_false", default=True, help="Don't rescale CP values between 0 and 1 (before averaging them)")
 
     args = parser.parse_args()
 
@@ -77,8 +82,7 @@ if __name__ == '__main__':
         except ValueError:
             log.error("Matrix file is in the wrong format. Exiting...")
             exit(1)
-    
-    score_matrix = np.average(matrices, axis=0)
+    matrices = np.array(matrices)
 
     try:
         structure = pd.parsePDB(args.pdb)
@@ -87,7 +91,7 @@ if __name__ == '__main__':
         exit(1)
 
     if structure is None:
-        log.error("Matrix file not found or not readable. Exiting...")
+        log.error("PDB file not found or not readable. Exiting...")
 
     args.sel_string = " ".join(args.sel_string)
 
@@ -96,11 +100,51 @@ if __name__ == '__main__':
     except pd.SelectionError:
         log.error("The selection string is not valid. Exiting...")
 
+    try:
+        fh_pairs = open(args.pairs_outfile, 'w')
+    except:
+        log.error("Couldn't write file %s. Exiting..." % args.output_pairs)
+        exit(1)  
+
+    fh_pairs.write("#First\tSecond\n")
+
+    compensatory_pairs = np.logical_or.reduce(matrices > args.score_cutoff)
+
+    for fs in np.arange(compensatory_pairs.shape[0]):
+        css = np.where(compensatory_pairs[fs,:])[0]
+        sel_fs = structure.select("resindex %d" % fs)
+        sel_fs_chid = np.unique(sel_fs.getChids())[0]
+        sel_fs_resnum = np.unique(sel_fs.getResnums())[0]
+
+        fh_pairs.write("%s%d\t" % (sel_fs_chid, sel_fs_resnum))
+
+        cs_strings = []
+
+        for cs in css:
+            sel_cs = structure.select("resindex %d" % cs)
+            sel_cs_chid = np.unique(sel_cs.getChids())[0]
+            sel_cs_resnum = np.unique(sel_cs.getResnums())[0]
+
+            cs_strings.append("%s%d" % (sel_cs_chid, sel_cs_resnum))
+
+        fh_pairs.write("%s\n" % ",".join(cs_strings))
+
+    fh_pairs.close()
+
     contacts = get_contacts(selection, args.distance_cutoff)
 
-    raw_index = get_raw_index(score_matrix, args.score_cutoff, axis=axis)
+    ra_powers = []
 
-    ra_power = raw_index/contacts
+    for score_matrix in matrices:
+
+        raw_index = get_raw_index(score_matrix, args.score_cutoff, axis=axis)/contacts
+
+        if args.rescale:
+            raw_index = rescale_minmax(raw_index)
+
+        ra_powers.append(raw_index)
+
+    ra_power = np.average(ra_powers, axis=0)
 
     try:
         np.savetxt(args.outfile, ra_power, fmt="%.3f")
