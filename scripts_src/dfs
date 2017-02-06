@@ -128,7 +128,7 @@ matrix instead of calculating it. The hessian matrix \
 will not be calculated if this flag is used.")
     parser.add_argument("-f", "--forces", dest="config", default=None, 
                         help="Configuration file for DFS runs. Defaults will \
-be used if such a file is not specified.)")
+be used if such a file is not specified.")
     parser.add_argument("-F", "--fitting", dest="fitting_operation", 
                         default="none", action="store", type=str, 
                         choices=fitting_operations.keys(), help="perform least \
