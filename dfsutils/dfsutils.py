@@ -264,7 +264,8 @@ class PerturbationResponseRun(ForceRun):
                     #print "force_v", np.reshape(force_set.forces[i].vector, (3,1)).T                    
                     scaled_force = np.reshape(force_set.forces[i].vector, (3,1)).T / self.scaling_factors[j,i]
                     #print "scaled_fv", scaled_force
-                    self.F[i, force_atom_idxs[j]*3:(force_atom_idxs[j]+1)*3] = scaled_force
+                    
+                    self.F[i, force_atom_idxs[j][0]*3:(force_atom_idxs[j][0]+1)*3] = scaled_force
                     #print "F_v", self.F
 
         self.ready = True
@@ -784,8 +785,6 @@ class DFSJob:
                 reference_atom_sets[name] = this_set
                 reference_force_sets[name] = []
                 
-                print reference_atom_sets, "AAZ"
-
             for name, s in parser.items(reference_force_sets_section):
                 if name not in reference_atom_sets.keys():
                     log.error("Force set %s was defined, but no correspondent atom sets found." % name)
