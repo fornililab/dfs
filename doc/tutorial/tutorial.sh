@@ -1,7 +1,7 @@
 # this is an example for a complete application of DFS, and as in "tests" 
-# uses the third immunoglobulin binding domain of Protein G (GB3). This includes
-# running the dfs script to get the rescuability matrices and then the 
-# compensatory_power script to calculate the rescaubility scores.
+# uses the p53 DNA Binding domain. This includes running the dfs script 
+# to get the rescuability matrices and then the compensatory_power script 
+# to calculate the rescaubility scores.
 
 
 #################################################################################
@@ -33,14 +33,14 @@ selection="chain A and protein and name CA"
 c=15.0
 
 # force constant for ANM harmonic potential (gamma)
-g=1.0
+g=0.1
 
 # Forces configuration file. Read the file itself for information
 # on its format and syntax. 
 forces_config=forces.ini
 
 # number of cores to be used 
-np=8
+np=2
 
 # command line
 echo now running: $dfs -p $pdb -f $forces_config -c $c -g $g -s $selection --np $np -v
