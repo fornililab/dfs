@@ -29,7 +29,7 @@ residue i has in the ANM model.
 Example:
 
     compensatory_power -m fixed_force_scores.dat -p original.pdb -o \
-    normalized_score.dat -p normalized_score.pdb -x 95
+    normalized_score.dat -p normalized_score.pdb
 
 """
 outro = ""
@@ -112,18 +112,18 @@ if __name__ == '__main__':
 
     for fs in np.arange(compensatory_pairs.shape[0]):
         css = np.where(compensatory_pairs[fs,:])[0]
-        sel_fs = structure.select("resindex %d" % fs)
-        sel_fs_chid = np.unique(sel_fs.getChids())[0]
-        sel_fs_resnum = np.unique(sel_fs.getResnums())[0]
+        sel_fs = list(selection)[fs]
+        sel_fs_chid = sel_fs.getChid()
+        sel_fs_resnum = sel_fs.getResnum()
 
         fh_pairs.write("%s%d\t" % (sel_fs_chid, sel_fs_resnum))
 
         cs_strings = []
 
         for cs in css:
-            sel_cs = structure.select("resindex %d" % cs)
-            sel_cs_chid = np.unique(sel_cs.getChids())[0]
-            sel_cs_resnum = np.unique(sel_cs.getResnums())[0]
+            sel_cs = list(selection)[cs]
+            sel_cs_chid = sel_cs.getChid()
+            sel_cs_resnum = sel_cs.getResnum()
 
             cs_strings.append("%s%d" % (sel_cs_chid, sel_cs_resnum))
 
