@@ -113,7 +113,7 @@ and following the on-screen instructions.
     please notice that numpy must be linked with openblas instead of 
     standard OSX BLAS libraries (i.e. Accelerate). This is because the
     default libraries are not compatible with how Python handles 
-    multiprocessing and therefore any dfs run using more than one
+    multiprocessing, therefore any dfs run that uses more than one
     core will result in the Python interpreter crashing with a 
     Segmentation fault error.
     
