@@ -290,7 +290,7 @@ file for Shannon entropies (default: entropy.txt)", default="entropy.txt")
         log.error("Couldn't write file %s; exiting..." % args.entropy_file)
 
     for k,v in inv_vals.iteritems():
-     	
+
         this_ss_rmsips = zip(*[d for d in inv_rmsips[k].items()])
         this_ss_dotp = zip(*[(d[0], np.max(d[1])) for d in v.items()])
         this_ss_max_rmsips_idx = np.argmax(this_ss_rmsips[1])
@@ -317,9 +317,6 @@ file for Shannon entropies (default: entropy.txt)", default="entropy.txt")
             pos_max.append(np.argmax(w))
 
         pos_max = np.array(pos_max)
-
-        if len(pos_max) == 1:        
-            entropy_fh.write("%s-%d%s\t%.3f\n" % (s[k].getChid(), s[k].getResnum(), s[k].getResname(), 0.))
 
         if len(pos_max) == 0:
             continue
