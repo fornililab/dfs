@@ -23,6 +23,7 @@ the following requirements:
 * Python 2.x (>= 2.7)
 * Cython >= 0.18
 * Python 2 packages: setuptools, numpy, h5py, prody
+* For macOS only, OpenBLAS (http://www.openblas.net)
 
 The installation instructions for prerequisite packages are included in the
 following section. These should cover standard Linux and OS X/macOS
@@ -95,13 +96,26 @@ and following the on-screen instructions.
 
 1. Installation of Python and Cython packages:
 
+   The easiest way to install the prerequisites for dfs on OS X is
+   using the Macports package manager (http://macports.org): 
+   
+    sudo port selfupdate
+    sudo port install openblas-devel
+    sudo port install py27-numpy +openblas
+    sudo port install py27-setuptools py27-numpy +openblas py27-cython\
+     py27-pip py27-setuptools py27-h5py
+
+    some packages also have to be installed through pip:
+
     sudo easy_install pip
-    sudo pip install numpy h5py prody
+    sudo pip install h5py prody
 
-   Alternatively, if the MacPorts package system (http://macports.org) is available:
-
-    sudo port selfupdate && sudo port install py27-setuptools py27-numpy \
-    py27-cython py27-pip py27-setuptools py27-h5py
+    please notice that numpy must be linked with openblas instead of 
+    standard OSX BLAS libraries (i.e. Accelerate). This is because the
+    default libraries are not compatible with how Python handles 
+    multiprocessing and therefore any dfs run using more than one
+    core will result in the Python interpreter crashing with a 
+    Segmentation fault error.
     
 2. Installation of prody package using pip
 
