@@ -56,14 +56,17 @@ if __name__ == '__main__':
     required_options.add_argument("-p", "--pdb", dest="pdb", type=str, action='store', help="PDB file filename", required=True)
     required_options.add_argument("-m", "--score-matrix", dest="score_matrix", type=str, action='store', nargs='+', help="Score matrix filename(s). If more than one matrix is provide, they will be averaged element-by-element before calculating Compensatory Power.", required=True)
 
-    parser.add_argument('-t', '--score-type', type=str, dest="type", action='store', choices=["rescue_ability", "rescuability"], default="rescue_ability", help="Use rescue_ability or rescuability values (default: rescue_ability)")
+    parser.add_argument('-t', '--score-type', type=str, dest="type", action='store', choices=["rescue_ability", "rescuability"], default="rescue_ability", help=argparse.SUPPRESS)
+    #help="Use rescue_ability or rescuability values (default: rescue_ability
     parser.add_argument('-s', '--selection-string', dest="sel_string", action='store', type=str, default=["protein and name CA"], nargs='+', help=("Selection string for the PDB file (default: 'protein and name CA')"))
     parser.add_argument('-c', '--score-cutoff', dest="score_cutoff", type=float, action='store', default=0.0, help="Rescuability score cut-off to detect rescuing positions (default: 0.0)")
     parser.add_argument('-d', '--distance-cutoff', dest="distance_cutoff", type=float, action='store', default=15.0, help="Distance cut-off for the contact matrix (A; detault: 15.0)")
     parser.add_argument('-o', '--output', type=str, dest="outfile", action='store', default="normalized_score.dat", help="Name for the output file (default: normalized_score.dat)")
-    parser.add_argument('-q', '--output-pairs', type=str, dest="pairs_outfile", action='store', default="fs_ss_pairs.dat", help="For each first-site residues, write identified second-sites according to the input matrix(es)")    
+    parser.add_argument('-q', '--output-pairs', type=str, dest="pairs_outfile", action='store', default="fs_ss_pairs.dat", help=argparse.SUPPRESS)
+    #help="For each first-site residues, write identified second-sites according to the input matrix(es)"
     parser.add_argument('-P', '--pdb-output', type=str, dest="pdb_outfile", action='store', default=None, help="Name for the output PDB file (default: don't save)")
-    parser.add_argument('-r', '--no-rescale', dest="rescale", action="store_false", default=True, help="Don't rescale CP values between 0 and 1 (before averaging them)")
+    parser.add_argument('-r', '--no-rescale', dest="rescale", action="store_false", default=True, help=argparse.SUPPRESS)
+    #help="Don't rescale CP values between 0 and 1 (before averaging them)")
 
     args = parser.parse_args()
 
