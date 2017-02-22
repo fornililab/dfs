@@ -1,16 +1,18 @@
-# DFS
+﻿# DFS
 
-The **D**ouble **F**orce **S**canning (**DFS**) is a computational method to
-predict compensatory mutations in proteins. The effect of mutations are
-represented by forces calculated using Linear Response Theory on Anisotropic
-Network Models (ANM).
+**D**ouble **F**orce **S**canning (**DFS**) is a computational method to
+predict rescue sites in proteins.
 
-Given a Pathogenic Mutation (PM) all the residues in the protein are scanned to
-identify secondary sites for candidate Compensatory Mutations (CM). For each
-pair of residues (PM and secondary site) a rescuability score R is calculated.
-Secondary sites with positive values of R indicate a putative compensatory
-effect. Finally for each secondary site a comprehensive value of Compensatory
-Power (CP) is calculated. Residues can be ranked according to their CP.
+DFS uses external forces applied to (first-site,second-site) pairs of residues
+to mimic the effect of a pathogenic mutation (first site) and a candidate 
+rescue mutation (second site). The effect of forces on the protein structure
+is calculated using the Linear Response Theory combined with the Anisotropic
+Network Model. The compensatory effect is quantified through a rescuability 
+index, which is > 0 when the structural perturbation induced by the forces at
+the two sites is smaller than the one produced by a single force at the first
+site. The rescuability indices of a given second site are combined to generate
+an overall estimate of its compensatory power, which can be used to predict if
+the residue is a rescue site.
 
 ## Availability
 
@@ -19,14 +21,14 @@ scientific purposes and under the condition that proper acknowledgement is made
 to the authors of the program in publications resulting from the use of the
 program. Please see [LICENSE](LICENSE) for details.
 
-DFS is available on [GitHub](https://github.research.its.qmul.ac.uk/eex058/dfs
-"DFS").  The distribution includes a Python module (dfsutils) that comprises the
-main classes and functions, as well as the following scripts:
+DFS is available on [GitHub](tobedefined "DFS").  The distribution includes a 
+Python module (dfsutils) that comprises the main classes and functions, as well
+as the following scripts:
 
  * **dfs**: runs the Double Force Scanning calculations
- * **compensatory_power**: calculates per-residue Compensatory Power index
+ * **compensatory_power**: calculates per-residue Compensatory Power
  * **data_muncher**: extracts data from the compressed HDF5 file
- * **dotM**: calculates the RMSIP between force and motion vectors
+ * **dotM**: calculates the RMSIP between force and displacement vectors
 
 A summary help can be obtained with the --help option, e.g.:
 
@@ -36,7 +38,7 @@ A summary help can be obtained with the --help option, e.g.:
 
 Please refer to the [INSTALL](INSTALL) file in the distribution.
 
-A [test](test) directory is provided to check the functionallity of your
+A [test](test) directory is provided to check your
 installation.
 
 ## Documentation
