@@ -63,20 +63,21 @@ if __name__ == "__main__":
     required_options.add_argument("-p", "--pdb", dest="original_pdb", type=str, 
                                   help="Original unperturbed PDB file", required=True)
     required_options.add_argument("-R", "--first-sites", dest="reference_residue", type=str, default=None, 
-help="First sites to be considered (ProDy selection string)", required=True, nargs='*', metavar='FIRST_SITE')
+help="First sites to be considered (see user manual)", required=True, nargs='*', metavar='FIRST_SITE')
     required_options.add_argument("-D", "--second-sites", dest="dfs_residue", type=str, default=None, 
-help="Second site to be considered (proDy selection string)",  required=True, nargs='*', metavar='SECOND_SITE')
+help="Second site to be considered (see user manual)",  required=True, nargs='*', metavar='SECOND_SITE')
     parser.add_argument("-m", "--pdb-ref-coords", dest="do_disp_orig", default=False, action="store_true", 
-help="Use the coordinates in the PDB instead of the single-force structures to calculate displacements")
+help="Use the coordinates in the unperturbed PDB instead of the single-force structures to calculate displacements")
     parser.add_argument("-r", "--first-site-direction", dest="r_score", default=max_s, type=str, 
 help="Direction of the force on the pathogenic mutation site ('max' or number; default: 'max')", metavar='FS_DIRECTION')
     parser.add_argument("-d", "--second-site-direction", dest="d_score", default=max_s, type=str, 
 help="Direction of the force on the secondary site ('max' or number; default: 'max')", metavar='SS_DIRECTION')
-    parser.add_argument("-n", "--n-modes", dest="n_modes", help="number of ANM modes (default: 10)", 
+    parser.add_argument("-n", "--n-modes", dest="n_modes", help="number of ANM modes to be \
+used for the calculation of RMSIP (default: 10)",
 default=10, type=int)
-    parser.add_argument("-t", "--data-type", dest="data_type", help="data type to be used for\
+    parser.add_argument("-t", "--data-type", dest="data_type", help="data type to be used for \
 the calculation of displacements (default: %s)"%P_XYZ, default=P_XYZ, choices=(P_XYZ, FP_XYZ))
-    parser.add_argument("-o", "--output-rmsip", dest="output_file", help="name of text output\
+    parser.add_argument("-o", "--output-rmsip", dest="output_file", help="name of text output \
 file (default: rmsip.txt)", default="rmsip.txt")
     parser.add_argument("-e", "--output-entropy", dest="entropy_file", help="name of text output\
 file for Shannon entropies (default: entropy.txt)", default="entropy.txt")

@@ -20,16 +20,18 @@ import numpy as np
 import prody as pd
 from prody import LOGGER as log
 
-intro="""Compensatory power calculates the compensatory power index from a .dat
-ASCII matrix file written by the dfs script and the original PDB file.
-Compensatory power is, per every residue i, equal to the number of residues
-predicted as rescued by residue i normalized by the number of contacts that
-residue i has in the ANM model.
+intro="""Compensatory power calculates the compensatory power index from
+one or more plain-text matrix file written by the dfs script and the original
+ PDB file. Compensatory power is, per every residue i, equal to the number 
+of residues predicted as rescued by residue i normalized by the number of 
+contacts that residue i has in the ANM model. These values are then scaled
+between 0 and 1 for every input matrix and then averaged if more than one
+matrix is provided.
 
 Example:
 
     compensatory_power -m fixed_force_scores.dat -p original.pdb -o \
-    normalized_score.dat -p normalized_score.pdb
+    normalized_score.dat -P normalized_score.pdb
 
 """
 outro = ""
@@ -54,17 +56,17 @@ if __name__ == '__main__':
     required_options = parser.add_argument_group('required options')                                     
     
     required_options.add_argument("-p", "--pdb", dest="pdb", type=str, action='store', help="PDB file filename", required=True)
-    required_options.add_argument("-m", "--score-matrix", dest="score_matrix", type=str, action='store', nargs='+', help="Score matrix filename(s). If more than one matrix is provide, they will be averaged element-by-element before calculating Compensatory Power.", required=True)
+    required_options.add_argument("-m", "--score-matrix", dest="score_matrix", type=str, action='store', nargs='+', help="Score matrix filename(s).", required=True)
 
     parser.add_argument('-t', '--score-type', type=str, dest="type", action='store', choices=["rescue_ability", "rescuability"], default="rescue_ability", help=argparse.SUPPRESS)
     #help="Use rescue_ability or rescuability values (default: rescue_ability
-    parser.add_argument('-s', '--selection-string', dest="sel_string", action='store', type=str, default=["protein and name CA"], nargs='+', help=("Selection string for the PDB file (default: 'protein and name CA')"))
-    parser.add_argument('-c', '--score-cutoff', dest="score_cutoff", type=float, action='store', default=0.0, help="Rescuability score cut-off to detect rescuing positions (default: 0.0)")
-    parser.add_argument('-d', '--distance-cutoff', dest="distance_cutoff", type=float, action='store', default=15.0, help="Distance cut-off for the contact matrix (A; detault: 15.0)")
+    parser.add_argument('-s', '--selection-string', dest="sel_string", action='store', type=str, default=["protein and name CA"], nargs='+', help=("Selection string for the PDB file (default: protein and name CA)"))
+    parser.add_argument('-c', '--score-cutoff', dest="score_cutoff", type=float, action='store', default=0.0, help="Rescuability score cut-off to detect rescued positions (default: 0.0)")
+    parser.add_argument('-d', '--distance-cutoff', dest="distance_cutoff", type=float, action='store', default=15.0, help="Distance cut-off to identify contacts, in A (default: 15.0)")
     parser.add_argument('-o', '--output', type=str, dest="outfile", action='store', default="normalized_score.dat", help="Name for the output file (default: normalized_score.dat)")
     parser.add_argument('-q', '--output-pairs', type=str, dest="pairs_outfile", action='store', default=None, help=argparse.SUPPRESS)
     #help="For each first-site residues, write identified second-sites according to the input matrix(es)"
-    parser.add_argument('-P', '--pdb-output', type=str, dest="pdb_outfile", action='store', default=None, help="Name for the output PDB file (default: don't save)")
+    parser.add_argument('-P', '--pdb-output', type=str, dest="pdb_outfile", action='store', default=None, help="Name for the output PDB file with the compensatory power values saved in the B-factor field (default: do not save)")
     parser.add_argument('-r', '--no-rescale', dest="rescale", action="store_false", default=True, help=argparse.SUPPRESS)
     #help="Don't rescale CP values between 0 and 1 (before averaging them)")
 

@@ -210,7 +210,7 @@ is given, data_muncher will just display metadata and quit.",
                            default=None)
     argparser.add_argument("-t", "--textual", dest="use_dat", 
                            default=False, action='store_true', help="Write \
-data in simple text format instead of npz when possible.")
+data in simple text format instead of npz.")
     argparser.add_argument("-d", "--decimal", dest="decimal", type=int, 
                            default=3, action='store', help="Number of decimal \
 places to be used in writing files (default: 3)")

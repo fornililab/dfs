@@ -106,17 +106,17 @@ residue. Default is: 'protein and name CA'", nargs='+')
                         default=False)
     parser.add_argument("-c", "--cutoff", dest="anm_cutoff", default=15.0, \
                         type=float, help="Distance cut-off for generating the \
-topology of ANM (in A; default is 15.0)")
+topology of ANM in A (default is 15.0)")
     parser.add_argument("-g", "--gamma", dest="anm_gamma", default=1.0, 
                         type=float, help="Spring force constant for ANM \
-(default is 1.0)")
+in kcal/mol/A^2 (default is 1.0)")
     parser.add_argument("-m", "--write-hessian", dest="hessian_output", 
                         nargs='?', const="hessian.dat", type=str, default=None, 
                         help="Save Hessian matrix of the ANM model (default: \
-matrix.dat)")
+matrix.dat; plain text format)")
     parser.add_argument("-M", "--load-hessian", dest="hessian_input", type=str, 
                         default=None, help="Load hessian matrix from file \
-instead of calculating it")
+                        in plain text format instead of calculating it")
     parser.add_argument("-i", "--write-covariance", dest="covariance_output", 
                         nargs='?', const="covariance.dat", type=str, 
                         default=None, help="Save the covariance matrix from \
@@ -124,18 +124,19 @@ the ANM used to calculate the effect of force \
 application (default: covariance.dat)")
     parser.add_argument("-I", "--load-covariance", dest="covariance_input", 
                         type=str, default=None, help="Load covariance \
-matrix instead of calculating it. The hessian matrix \
-will not be calculated if this flag is used.")
+matrix in plain text format instead of calculating \
+it. The hessian matrix will not be calculated if \
+this flag is used.")
     parser.add_argument("-f", "--forces", dest="config", default=None, 
                         help="Configuration file for DFS runs. Defaults will \
 be used if such a file is not specified.")
     parser.add_argument("-F", "--fitting", dest="fitting_operation", 
                         default="none", action="store", type=str, 
-                        choices=fitting_operations.keys(), help="perform least \
-quare fitting between the displaced and original geometries")
+                        choices=fitting_operations.keys(), help="superimpose \
+the displaced and original geometries before calculating scores (default: none)")
     parser.add_argument("-a", "--fit-selection", dest="fit_selection", 
-                        default=["name CA"], help="selection string that selects \
-the group that will be used for fitting")
+                        default=["protein and name CA"], help="selection string that selects \
+the group that will be used for fitting (default: protein and name CA)")
     parser.add_argument("-d", "--conformational-distance", 
                         dest="conformational_distance", choices=scores.keys(), 
                         help="which conformational distance measure will be \
@@ -150,7 +151,15 @@ data that should be saved in the output details file. Choose between \
 force_vectors, displacements, displacements_after_fit, perturbed_coordinates, \
 fitted_perturbed_coordinates, score_matrix, raw_score_matrix, \
 conformational_distance_matrixes, scaling_factors. 'all' just saves \
-everything. Default is %s. This option will be ignored if -o is not supplied" % P_XYZ, default=P_XYZ)
+everything. Default is %s. This option will be ignored if -o is not supplied" % "none", default="")
+    parser.add_argument("-x", "--include-application-sites", 
+                        dest="exclude_sites", action='store_false', 
+                        default=True, help="Include force application sites \
+in the calculation of scores (by default it doesn't)")
+    parser.add_argument("-S", "--output-scores", dest="output_scores", 
+                        default="scores", type=str,  action="store", 
+                        help="Suffix for the filename of the rescuability score \
+matrices (default is scores)")
     parser.add_argument("-o", "--output", dest="output_fname", 
                         default=None, type=str, action="store", 
                         help="Suffix to be used for the filename of the HDF5 \
@@ -159,17 +168,9 @@ details file, in case -w/--write is specified")
                         type=str, default="both", choices=["fixed_forces",
                         "fixed_displacements", "both"], help="Force mode to be \
 used (default: both)")
-    parser.add_argument("-S", "--output-scores", dest="output_scores", 
-                        default="scores", type=str,  action="store", 
-                        help="Suffix for the filename of the rescuability score \
-matrices")
-    parser.add_argument("-q", "--precision", dest="precision", default=-1, 
+    parser.add_argument("-q", "--precision", dest="precision", default=3, 
                         type=int, help="Number of decimal places to be used \
 in .h5 detail files (-1 for lossless; default: 3)")
-    parser.add_argument("-x", "--include-application-sites", 
-                        dest="exclude_sites", action='store_false', 
-                        default=True, help="Include force application sites \
-in the calculation of scores (by default it doesn't)")
                         
     args = parser.parse_args()
     
