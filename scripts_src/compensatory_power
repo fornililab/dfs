@@ -62,7 +62,7 @@ if __name__ == '__main__':
     parser.add_argument('-c', '--score-cutoff', dest="score_cutoff", type=float, action='store', default=0.0, help="Rescuability score cut-off to detect rescuing positions (default: 0.0)")
     parser.add_argument('-d', '--distance-cutoff', dest="distance_cutoff", type=float, action='store', default=15.0, help="Distance cut-off for the contact matrix (A; detault: 15.0)")
     parser.add_argument('-o', '--output', type=str, dest="outfile", action='store', default="normalized_score.dat", help="Name for the output file (default: normalized_score.dat)")
-    parser.add_argument('-q', '--output-pairs', type=str, dest="pairs_outfile", action='store', default="fs_ss_pairs.dat", help=argparse.SUPPRESS)
+    parser.add_argument('-q', '--output-pairs', type=str, dest="pairs_outfile", action='store', default=None, help=argparse.SUPPRESS)
     #help="For each first-site residues, write identified second-sites according to the input matrix(es)"
     parser.add_argument('-P', '--pdb-output', type=str, dest="pdb_outfile", action='store', default=None, help="Name for the output PDB file (default: don't save)")
     parser.add_argument('-r', '--no-rescale', dest="rescale", action="store_false", default=True, help=argparse.SUPPRESS)
@@ -103,36 +103,37 @@ if __name__ == '__main__':
     except pd.SelectionError:
         log.error("The selection string is not valid. Exiting...")
 
-    try:
-        fh_pairs = open(args.pairs_outfile, 'w')
-    except:
-        log.error("Couldn't write file %s. Exiting..." % args.output_pairs)
-        exit(1)  
+    if args.pairs_outfile is not None:
+        try:
+            fh_pairs = open(args.pairs_outfile, 'w')
+        except:
+            log.error("Couldn't write file %s. Exiting..." % args.output_pairs)
+            exit(1)  
 
-    fh_pairs.write("#First\tSecond\n")
+        fh_pairs.write("#First\tSecond\n")
 
-    compensatory_pairs = np.logical_or.reduce(matrices > args.score_cutoff)
+        compensatory_pairs = np.logical_or.reduce(matrices > args.score_cutoff)
 
-    for fs in np.arange(compensatory_pairs.shape[0]):
-        css = np.where(compensatory_pairs[fs,:])[0]
-        sel_fs = list(selection)[fs]
-        sel_fs_chid = sel_fs.getChid()
-        sel_fs_resnum = sel_fs.getResnum()
+        for fs in np.arange(compensatory_pairs.shape[0]):
+            css = np.where(compensatory_pairs[fs,:])[0]
+            sel_fs = list(selection)[fs]
+            sel_fs_chid = sel_fs.getChid()
+            sel_fs_resnum = sel_fs.getResnum()
 
-        fh_pairs.write("%s%d\t" % (sel_fs_chid, sel_fs_resnum))
+            fh_pairs.write("%s%d\t" % (sel_fs_chid, sel_fs_resnum))
 
-        cs_strings = []
+            cs_strings = []
 
-        for cs in css:
-            sel_cs = list(selection)[cs]
-            sel_cs_chid = sel_cs.getChid()
-            sel_cs_resnum = sel_cs.getResnum()
+            for cs in css:
+                sel_cs = list(selection)[cs]
+                sel_cs_chid = sel_cs.getChid()
+                sel_cs_resnum = sel_cs.getResnum()
 
-            cs_strings.append("%s%d" % (sel_cs_chid, sel_cs_resnum))
+                cs_strings.append("%s%d" % (sel_cs_chid, sel_cs_resnum))
 
-        fh_pairs.write("%s\n" % ",".join(cs_strings))
+            fh_pairs.write("%s\n" % ",".join(cs_strings))
 
-    fh_pairs.close()
+        fh_pairs.close()
 
     contacts = get_contacts(selection, args.distance_cutoff)
 
