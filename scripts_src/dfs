@@ -44,14 +44,14 @@ a compensatory effect.
 By default, DFS will be run with the following options:
 
 ANM model
-    atom selection (-s): 'name CA'
+    atom selection (-s): 'protein and name CA'
     distance cut-off (-c): 15.0 A
     force constant (-g): 1.0
 Force application
     number of forces: 12
     directions of forces: Fibonacci lattice
     Force magnitude: 10.0 UNIT
-    selection of atoms on which forces will be applied: 'name CA'
+    selection of atoms on which forces will be applied: 'protein and name CA'
 Calculation of the rescuability score
     conformational distance measure (-d): dRMSD (distance RMSD)
     fitting operation (-F): none
