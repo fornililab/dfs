@@ -272,13 +272,21 @@ file for Shannon entropies (default: entropy.txt)", default="entropy.txt")
         rmsip = np.sqrt(this_sum)
         inv_rmsips[pair[1]][pair[0]] = rmsip
 
-        out_fh.write("Residues %s-%d%s, %s-%d%s, score %.3f; RMSIP is %.3f\n" % ( s[pair[0]].getChid(), s[pair[0]].getResnum(), s[pair[0]].getResname(),
+        if pair[0] != pair[1]:
+            out_fh.write("Residues %s-%d%s, %s-%d%s, score %.3f; RMSIP is %.3f\n" % ( s[pair[0]].getChid(), s[pair[0]].getResnum(), s[pair[0]].getResname(),
+                                                                             s[pair[1]].getChid(), s[pair[1]].getResnum(), s[pair[1]].getResname(),
+                                                                             this_rs[where],
+                                                                             rmsip ))
+
+            for i,v in enumerate(inv_vals[pair[1]][pair[0]]):
+                out_fh.write("\tMode %i: %.3f\n" % (i,v))
+        
+        else:
+            out_fh.write("Residues %s-%d%s, %s-%d%s, score %.3f; RMSIP is %.3f\n" % ( s[pair[0]].getChid(), s[pair[0]].getResnum(), s[pair[0]].getResname(),
                                                                          s[pair[1]].getChid(), s[pair[1]].getResnum(), s[pair[1]].getResname(),
                                                                          this_rs[where],
-                                                                         rmsip ))
+                                                                         np.nan ))
 
-        for i,v in enumerate(inv_vals[pair[1]][pair[0]]):
-            out_fh.write("\tMode %i: %.3f\n" % (i,v))
             
     out_fh.close()
 
