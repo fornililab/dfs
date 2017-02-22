@@ -282,10 +282,10 @@ file for Shannon entropies (default: entropy.txt)", default="entropy.txt")
                 out_fh.write("\tMode %i: %.3f\n" % (i,v))
         
         else:
-            out_fh.write("Residues %s-%d%s, %s-%d%s, score %.3f; RMSIP is %.3f\n" % ( s[pair[0]].getChid(), s[pair[0]].getResnum(), s[pair[0]].getResname(),
+            out_fh.write("Residues %s-%d%s, %s-%d%s, score %.3f; RMSIP is %s\n" % ( s[pair[0]].getChid(), s[pair[0]].getResnum(), s[pair[0]].getResname(),
                                                                          s[pair[1]].getChid(), s[pair[1]].getResnum(), s[pair[1]].getResname(),
                                                                          this_rs[where],
-                                                                         np.nan ))
+                                                                         "NA" ))
 
             
     out_fh.close()
