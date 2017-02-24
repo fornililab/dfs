@@ -21,7 +21,7 @@ Just execute the run_test.sh file:
 the expected output for the script is "TEST PASSED" for all three tests.
 
 If tests fail please check that dfs has been installed correctly and that your
-Python environment is found. If this is the case please open a detailed issue
+Python environment is sound. If this is the case please open a detailed issue
 on the dfs GitHub repository (https://github.com/fornililab/dfs) or contact the
 authors for further assistance.
 
