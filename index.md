@@ -1,4 +1,4 @@
-﻿# DFS
+﻿## Double Force Scanning
 
 **D**ouble **F**orce **S**canning (**DFS**) is a computational method to
 predict rescue sites in proteins.
