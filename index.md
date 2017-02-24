@@ -1,37 +1,54 @@
-## Welcome to GitHub Pages
+﻿# DFS
 
-You can use the [editor on GitHub](https://github.com/fornililab/dfs/edit/gh-pages/index.md) to maintain and preview the content for your website in Markdown files.
+**D**ouble **F**orce **S**canning (**DFS**) is a computational method to
+predict rescue sites in proteins.
 
-Whenever you commit to this repository, GitHub Pages will run [Jekyll](https://jekyllrb.com/) to rebuild the pages in your site, from the content in your Markdown files.
+DFS uses external forces applied to (first-site,second-site) pairs of residues
+to mimic the effect of a pathogenic mutation (first site) and a candidate 
+rescue mutation (second site). The effect of forces on the protein structure
+is calculated using the Linear Response Theory combined with the Anisotropic
+Network Model. The compensatory effect is quantified through a rescuability 
+index, which is > 0 when the structural perturbation induced by the forces at
+the two sites is smaller than the one produced by a single force at the first
+site. The rescuability indices of a given second site are combined to generate
+an overall estimate of its compensatory power, which can be used to predict if
+the residue is a rescue site.
 
-### Markdown
+## Availability
 
-Markdown is a lightweight and easy-to-use syntax for styling your writing. It includes conventions for
+The program is made available under the GNU Public License for academic
+scientific purposes and under the condition that proper acknowledgement is made
+to the authors of the program in publications resulting from the use of the
+program. Please see [LICENSE](LICENSE) for details.
 
-```markdown
-Syntax highlighted code block
+DFS is available on [GitHub](tobedefined "DFS").  The distribution includes a 
+Python module (dfsutils) that comprises the main classes and functions, as well
+as the following scripts:
 
-# Header 1
-## Header 2
-### Header 3
+ * **dfs**: runs the Double Force Scanning calculations
+ * **compensatory_power**: calculates per-residue Compensatory Power
+ * **data_muncher**: extracts data from the compressed HDF5 file
+ * **dotM**: calculates the RMSIP between force and displacement vectors
 
-- Bulleted
-- List
+A summary help can be obtained with the --help option, e.g.:
 
-1. Numbered
-2. List
+`dfs --help`
 
-**Bold** and _Italic_ and `Code` text
+## Installation
 
-[Link](url) and ![Image](src)
-```
+Please refer to the [INSTALL](INSTALL) file in the distribution.
 
-For more details see [GitHub Flavored Markdown](https://guides.github.com/features/mastering-markdown/).
+A [test](test) directory is provided to check your
+installation.
 
-### Jekyll Themes
+## Documentation
 
-Your Pages site will use the layout and styles from the Jekyll theme you have selected in your [repository settings](https://github.com/fornililab/dfs/settings). The name of this theme is saved in the Jekyll `_config.yml` configuration file.
+Please refer to the [doc](doc) directory in the distribution.
+A step-by-step [tutorial](doc/tutorial) is also included.
+ 
+## Citation
 
-### Support or Contact
+If you publish results produced with the DFS or develop methods based on the DFS
+code, please cite the following paper:
 
-Having trouble with Pages? Check out our [documentation](https://help.github.com/categories/github-pages-basics/) or [contact support](https://github.com/contact) and we’ll help you sort it out.
+<reference>
