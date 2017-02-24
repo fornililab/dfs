@@ -16,17 +16,25 @@
 # along with this program.  If not, see <http://www.gnu.org/li.censes/>.
 
 
-intro = """data_muncher reads and digests a HDF5 binary format data file 
-written by dfs and writes files in the current directory that are easier to 
-access and read. It saves numerical data types as .npz numpy-readable files or
-text files and structural data as .dcd trajectory files. Depending on what is 
-requested, data_muncher can write a huge number of files that take big amounts 
-of disk space, so be careful for what you ask for :)
+intro = """data_muncher reads and digests a HDF5 binary format data file written
+by dfs and writes files in the current directory that are easier to access and
+read. It saves numerical data types as .npz numpy-readable files or text files
+and structural data as .dcd trajectory files. 
+
+As a HDF5 dfs file can contain different types of data, the user should specity
+the ones he's interested in with option -w. Options -R and -D control the
+residues of which details will be written (respectively, first and second site).
+
+If -w is not specified the metadata for the dfs run is printed on screen and
+the program exits.
+
+Depending on what is requested, data_muncher can write a huge number of files
+that take big amounts of disk space, so be careful for what you ask for :)
 
 Example:
 
-    data_muncher -w force_vectors -t -d 3 -f ../fixed_force_details.h5 \
-    -p ../original.pdb
+    data_muncher -w force_vectors -t -d 3 -f fixed_force_details.h5 \\
+    -p original.pdb
 """
 outro=""
 
@@ -215,9 +223,9 @@ data in simple text format instead of npz.")
                            default=3, action='store', help="Number of decimal \
 places to be used in writing files (default: 3)")
     argparser.add_argument("-R", "--first-sites", dest="reference_residue", type=str, default=["protein and name CA"], 
-                           help="First site (default: 'protein and name CA')", nargs='+', metavar='FIRST_SITE')
+                           help="First site (default: protein and name CA)", nargs='+', metavar='FIRST_SITE')
     argparser.add_argument("-D", "--second-sites", dest="dfs_residue", type=str, default=["protein and name CA"], 
-                           help="Second site (default: 'protein and name CA')", nargs='+', metavar='SECOND_SITE')
+                           help="Second site (default: protein and name CA)", nargs='+', metavar='SECOND_SITE')
 
     args = argparser.parse_args()
 

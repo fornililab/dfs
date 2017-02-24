@@ -35,10 +35,10 @@ of compensatory mutations in proteins as detailed in:
 <paper>
 
 The method uses Linear Response Theory on Anisotropic Network Models (ANM)
-to calculate a rescuability score R between pairs of residues, one that is 
+to calculate a rescuability score S between pairs of residues, one that is 
 considered to be a pathogenic mutation to be compensated (First Site, FS) 
 and another that is a secondary mutation site (Second Site, SM), which 
-represents a potential compensatory site. Positive values of R indicate
+represents a potential compensatory site. Positive values of S indicate
 a compensatory effect.
 
 By default, DFS will be run with the following options:
@@ -50,8 +50,9 @@ ANM model
 Force application
     number of forces: 12
     directions of forces: Fibonacci lattice
-    Force magnitude: 10.0 UNIT
-    selection of atoms on which forces will be applied: 'protein and name CA'
+    Force magnitude: 10.0 kcal/mol/A
+    selection of atoms on which forces will be applied
+        for both sites: 'protein and name CA'
 Calculation of the rescuability score
     conformational distance measure (-d): dRMSD (distance RMSD)
     fitting operation (-F): none
@@ -100,7 +101,7 @@ if __name__ == "__main__":
                         default=["protein and name CA"], help="CHARMM-style selection of \
 atoms to be used to build the ANM model. The final \
 selection should contain at most one CA atom per \
-residue. Default is: 'protein and name CA'", nargs='+')
+residue. (default is: protein and name CA)", nargs='+')
     parser.add_argument("-v", "--verbose", dest="verbose", 
                         help="toggle verbose mode", action='store_true',
                         default=False)
@@ -116,7 +117,7 @@ in kcal/mol/A^2 (default is 1.0)")
 matrix.dat; plain text format)")
     parser.add_argument("-M", "--load-hessian", dest="hessian_input", type=str, 
                         default=None, help="Load hessian matrix from file \
-                        in plain text format instead of calculating it")
+in plain text format instead of calculating it")
     parser.add_argument("-i", "--write-covariance", dest="covariance_output", 
                         nargs='?', const="covariance.dat", type=str, 
                         default=None, help="Save the covariance matrix from \
@@ -135,11 +136,11 @@ be used if such a file is not specified.")
                         choices=fitting_operations.keys(), help="superimpose \
 the displaced and original geometries before calculating scores (default: none)")
     parser.add_argument("-a", "--fit-selection", dest="fit_selection", 
-                        default=["protein and name CA"], help="selection string that selects \
+                        default=["protein and name CA"], help="Selection string that selects \
 the group that will be used for fitting (default: protein and name CA)")
     parser.add_argument("-d", "--conformational-distance", 
                         dest="conformational_distance", choices=scores.keys(), 
-                        help="which conformational distance measure will be \
+                        help="Which conformational distance measure will be \
 used (default: drmsd)", default="drmsd")
     parser.add_argument("-n", "--np", dest="np", default=1, type=int, 
                         action="store", help="Number of cores to be used \
@@ -155,7 +156,7 @@ everything. Default is %s. This option will be ignored if -o is not supplied" % 
     parser.add_argument("-x", "--include-application-sites", 
                         dest="exclude_sites", action='store_false', 
                         default=True, help="Include force application sites \
-in the calculation of scores (by default it doesn't)")
+in the calculation of scores (by default they are not)")
     parser.add_argument("-S", "--output-scores", dest="output_scores", 
                         default="scores", type=str,  action="store", 
                         help="Suffix for the filename of the rescuability score \

@@ -20,20 +20,25 @@ import numpy as np
 import prody as pd
 from prody import LOGGER as log
 
-intro="""Compensatory power calculates the compensatory power index from
-one or more plain-text matrix file written by the dfs script and the original
- PDB file. Compensatory power is, per every residue i, equal to the number 
-of residues predicted as rescued by residue i normalized by the number of 
-contacts that residue i has in the ANM model. These values are then scaled
-between 0 and 1 for every input matrix and then averaged if more than one
-matrix is provided.
+intro="""compensatory_power calculates the compensatory power index from
+one or more plain-text matrix file written by the dfs script. Compensatory
+power is, per every residue i, equal to the number of residues predicted
+as rescued by residue i (i.e. having S > 0) normalized by the number of 
+contacts that residue i has in the ANM model. These values are then scaled 
+between 0 and 1 for every input matrix and averaged if more than one matrix 
+is provided.
+
+When option -P is used, scored are written in the B-factor field of the
+PDB file; however, the values are first multiplied by 10 in order not 
+to lose decimal places, as the PDB format only allows two.
 
 Example:
 
-    compensatory_power -m fixed_force_scores.dat -p original.pdb -o \
+    compensatory_power -m fixed_force_scores.dat -p original.pdb -o \\
     normalized_score.dat -P normalized_score.pdb
 
 """
+
 outro = ""
 
 def get_contacts(s, dist_co):

@@ -27,17 +27,21 @@ from dfsutils import P_XYZ, FP_XYZ, RAW_SCORES
 
 intro = """dotM calculates the Root Mean Square Inner Product (RMSIP) between
 the modes calculated from the ANM and the displacement vectors calculated by 
-DFS for a given pair of residue and force directions. RMSIP is a measure of 
-overlap between the two different sets of vectors and ranges from 0 to 1, 
-where 1 indicates perfectly superimposable sets.
+dfs as the difference between the structure perturbed by two forces and
+either the unperturbed structure (-m option) or the structure perturbed by a
+single force (default). 
 
-Examples:
-
-    dotM -f fixed_force_details.h5 -p original.pdb -R A5 -D A10 -r 1 -d 5
+RMSIP is a measure of overlap between the two different
+sets of vectors and ranges from 0 to 1, where 1 indicates perfectly 
+superimposable sets.
 
 Please notice that dotM requires some information written in the .h5 file
 to work, namely the perturbed_coordinates or fitted_perturbed_coordinates
 and raw_score_matrix.
+
+Examples:
+
+    dotM -f fixed_force_details.h5 -p original.pdb -R A5 -D A10 -r 1 -d 5
 """
 
 outro=""
