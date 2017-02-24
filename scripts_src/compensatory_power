@@ -169,6 +169,6 @@ if __name__ == '__main__':
             betas[sel_res_index.getIndices()] = ra_power[i]
         
         try:
-            pd.writePDB(args.pdb_outfile, structure, beta=betas)
+            pd.writePDB(args.pdb_outfile, structure, beta=betas*10.0)
         except:
             log.error("Couldn't write file %s, Exiting..." % args.pdb_outfile)
