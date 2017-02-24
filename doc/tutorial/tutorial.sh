@@ -72,7 +72,7 @@ $compp -m fixed_force_scores.dat fixed_displacements_scores.dat -p $pdb -s $sele
 # We can visualize the compensatory power on the structure using the
 # compensatory_power.pdb file generated in the previous setp and PyMOL. 
 # We just run the following command in the current directory (PyMOL must 
-#be installed and available on command line):
+# be installed and available on command line):
 
 echo "now running: $pymol_binary -d run $pymol_runfile"
 $pymol_binary -d run $pymol_runfile
