@@ -7,12 +7,8 @@ from os.path import isfile, join
 from setuptools import setup, Extension
 from Cython.Build import cythonize
 
-if sys.version_info[:2] < (2, 6):
-    sys.stderr.write('Python 2.5 and older is not supported\n')
-    sys.exit()
-
-if os.name == 'java':
-    sys.stderr.write('JavaOS is not supported\n')
+if sys.version_info[:2] < (2, 7):
+    sys.stderr.write('Python 2.6 and older is not supported\n')
     sys.exit()
 
 try:
@@ -27,7 +23,7 @@ if [int(dgt) for dgt in numpy.__version__.split('.')[:2]] < [1, 4]:
                      'http://numpy.scipy.org\n')
     sys.exit()
 
-__version__ = '0.1'
+__version__ = '1.0'
 
 with open('README.md') as inp:
     long_description = inp.read()
@@ -75,6 +71,4 @@ setup(
                 ],
     scripts=scripts,
     zip_safe=False
-    #requires=['NumPy (>=1.7), ProDy'],
-    #provides=['DFS ({0:s})'.format(__version__)]
 )
