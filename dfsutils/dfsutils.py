@@ -1,6 +1,6 @@
 #! /usr/bin/env python
-# dfs.py - implements the Double Force Scanning method for elastic network models
-# Copyright (C) 2015 Matteo Tiberti <matteo.tiberti@gmail.com>
+# dfsutils - library implementing the the Double Force Scanning method for elastic network models
+# Copyright (C) 2017 Matteo Tiberti <matteo.tiberti@gmail.com>
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -205,11 +205,9 @@ class PerturbationResponseRun(ForceRun):
             assert(self.covariance.shape[0] == len(self.atoms)*3)
 
             force_set_sizes = []
-            #print self.force_sets, 'AAA'
             for force_set in self.force_sets:
                 force_set_sizes.append(len(force_set.forces))
 
-            #print "FSS", force_set_sizes
             # ensure at least one force for force set
             assert(0 not in force_set_sizes)
             # remove all the cases in which there's only one force
@@ -245,28 +243,11 @@ class PerturbationResponseRun(ForceRun):
             if self.scaling_factors is None:
                 self.scaling_factors = np.ones(( len(self.force_sets), len(self.force_sets[0].forces)))
             else:
-                #print self.scaling_factors.shape
                 assert(self.scaling_factors.shape[1]) == len(self.force_sets[0].forces)
-            #print "SF", self.scaling_factors
-            #print "sf", self.scaling_factors
             for i in range(times_forces_are_applied):
-                #print self.scaling_factors.shape
-                #print len(self.force_sets[0].forces)
-                    #print self.scaling_factors.shape
-                    #print self.force_sets, "FS"
-                    #for u,fs in enumerate(self.force_sets[0].forces):
-                        #print u, fs
-                    #print np.ones((len(self.force_sets[0].forces), len(self.force_sets)))
-
                 for j,force_set in enumerate(self.force_sets):
-                    #print self.scale_factor[i,j]
-                    #print np.reshape(force_set.forces[i].vector, (3,1)).T
-                    #print "force_v", np.reshape(force_set.forces[i].vector, (3,1)).T                    
                     scaled_force = np.reshape(force_set.forces[i].vector, (3,1)).T / self.scaling_factors[j,i]
-                    #print "scaled_fv", scaled_force
-                    
                     self.F[i, force_atom_idxs[j][0]*3:(force_atom_idxs[j][0]+1)*3] = scaled_force
-                    #print "F_v", self.F
 
         self.ready = True
 
@@ -285,7 +266,6 @@ class PerturbationResponseJob:
                     write_queue=None,
                     score_kwargs=None,
                     scaling_factors=None):
-        # refs, variables, atoms, covariance, name
         self.refs = refs
         self.fitting_operation = fitting_operation
         self.fitting_string = fitting_string
@@ -319,10 +299,6 @@ class PerturbationResponseJob:
             return None
 
         return self.details_fh.visit(f)
-
-        #self.save_displacements = save_displacements
-        #self.save_displacement_magnitudes = save_displacement_magnitudes
-        #self.save_force_vectors = save_force_vectors
 
     def prepare(self):
         log.debug("Preparing Perturbation Job")
@@ -358,17 +334,11 @@ class PerturbationResponseJob:
                 sets_idxs = [s.origin.getResindex() for s in sets]
                 sets_scale_idx = [np.where(x == indices) for x in sets_idxs]
                 for s_i,s in enumerate(sets_scale_idx):
-                    #print r_i+s_i+1, "RISI"
                     this_scaling_factors[r_i+1+s_i,:] = self.scaling_factors[s,:].reshape((sf_shape,sf_shape)).T.flatten()
 
-                #sets_scaling_factors = np.array([ref_scaling_factors] + [self.scaling_factors[r][0] for r in sets_scale_idx])
             else:
                 this_scaling_factors = None
 
-            #print "RF", ref_scaling_factors.shape
-            #print "SSF", this_scaling_factors.shape
-
-            #print sets_scaling_factors
             self.runs.append(PerturbationResponseRun(combination,
                                                      self.atoms,
                                                      self.covariance,
@@ -651,12 +621,7 @@ class DFSJob:
 
         reference_force_sets, force_sets, config_options = self.parse_config_file(config_file, self.structure, self.atoms)
 
-        #print "valssss", reference_force_sets.values()
         ref_combinations = itertools.product(*reference_force_sets.values())
-        #print "refsss", reference_force_sets
-        #print "listone",list(ref_combinations)
-
-        #combinations =     itertools.product(*force_sets.values())
 
         dimensions = len(force_sets.keys()) + len(reference_force_sets.keys())
 
@@ -666,9 +631,6 @@ class DFSJob:
         self.min_score_matrix = np.zeros([indices.shape[0] for i in range(dimensions)])
         self.max_score_matrix = np.zeros([indices.shape[0] for i in range(dimensions)])
 
-        #print "combsss", list(ref_combinations)
-
-        #log.info("Ok, we will write details to file")
         manager = mp.Manager()
         self.write_queue = manager.Queue()
 
@@ -699,9 +661,6 @@ class DFSJob:
         else:
             self.scaling_factors = None
 
-        #print "SCALA", scaling_factors,
-        #print scaling_factors.shape
-
         ref_combinations = itertools.product(*reference_force_sets.values())
 
         for comb in ref_combinations:
@@ -722,7 +681,6 @@ class DFSJob:
                                     score_kwargs = score_kwargs)])
 
     def parse_config_file(self, config_file, structure, atoms):
-        # XXX check uniqueness of names
 
         reference_atom_sets_section = "first sites atom sets"
         reference_force_sets_section = "first sites force sets"
@@ -766,7 +724,7 @@ class DFSJob:
                 else:
                     options[name] = parser.get(options_section, name)
 
-        if len(required_sections & set(parser.sections())) == 4: # combinations mode # XXX all of none these sections must be present
+        if len(required_sections & set(parser.sections())) == 4:
             for name, s in parser.items(reference_atom_sets_section):
                 try:
                     this_set = AtomSet(structure.select(s))
@@ -836,13 +794,35 @@ class DFSJob:
                     except:
                         log.error("Couldn't calculate force set for atom %s in set %s" % (atom, name))
                         exit(1)
+            
+            if len(dfs_atom_sets.keys()) != 1 or len(reference_atom_sets.keys()) != 1:
+                log.error("The current implementation of DFS only supports one atom set for First and Second sites at the time.")
+                exit(1)
+           
+            dfs_atom_set = dfs_atom_sets[dfs_atom_sets.keys()[0]]
+            dfs_force_set = dfs_force_sets[dfs_force_sets.keys()[0]]
+            reference_atom_set = reference_atom_sets[reference_atom_sets.keys()[0]]
+            reference_force_set = reference_force_sets[reference_force_sets.keys()[0]]
+
+            if dfs_atom_set.selection not in reference_atom_set.selection:
+                    log.error("The current implementation of DFS only supports cases in which Second sites are a subset of First sites.")
+                    exit(1)
+            
+            n_forces = []
+
+            for fs in reference_force_set:
+                n_forces.append(len(fs.forces))
+            for fs in dfs_force_set:
+                n_forces.append(len(fs.forces))
+            if len(list(set(n_forces))) != 1:
+                log.error("The current implementation of DFS only supports the same number of forces for First and Second Sites.")
+                exit(1)
 
             return reference_force_sets, dfs_force_sets, options
 
         else:
             # XXX implement custom cases
             return None
-        #print self.score_matrix
 
     def get_score_matrix(self):
         for idxs, avg_results, min_results, max_results in self.job_results:
@@ -879,9 +859,6 @@ class DFSJob:
             if SF in self.do_write:
                 log.info("Writing scaling factors to file ...")
                 self.write_queue.put((SF, "/", self.scaling_factors))
-            #self.write_queue.put(("scaling_cds", "/", self.scaling_cds))
-            #for i,c in enumerate(self.scaling_coords):
-                #self.write_queue.put(("%d" %i, "/scaling_coords/", c))
             
             
 
@@ -918,12 +895,8 @@ class Score:
 
         if kwargs["exclude_sites"]:
             idxs = self.ref_original.getResindices()
-            #print list(self.ref_original)
-            #print "XXX", kwargs["this_score_idxs"]
 
             mask = idxs[np.logical_and.reduce([ idxs != s[0] for s in kwargs["this_score_idxs"]])]
-            
-            #print "mask", mask            
             
             self.ref_original = self.ref_original[mask]
             self.this_original = self.this_original[mask]
@@ -933,20 +906,8 @@ class Score:
             ref_structures.setAtoms(self.ref_original)
             structures.setAtoms(self.this_original)
 
-            #print self.ref_structures, "GGG"
-            #print "idxs", idxs
-
             mask = idxs[np.logical_and.reduce([ idxs != s for s in np.array(kwargs["this_score_idxs"]).T[0,0,:]])]        
-            #print "mask2", mask    
-
-            
-            #print '----'            
-            
-            #print "this_idxs", kwargs["this_idxs"]
-            #print "this_score_idxs", kwargs["this_score_idxs"]            
-            #print self.ref_structures.getCoordsets().shape
-            #print len(ref_structures.getAtoms())
-            
+                       
             ref_structures.addCoordset(self.ref_structures.getCoordsets()[:,mask,:])
             structures.addCoordset(self.structures.getCoordsets()[:,mask,:])
  
@@ -991,8 +952,6 @@ class ScoreRMSD(Score):
             structures_per_ref = len(self.structures)
 
         assert( len(self.structures) % len(self.ref_structures) == 0 )
-        #reference_rmsds = self.ref_structures.getRMSDs().repeat(len(self.structures)/len(self.ref_structures)) # 1 1 1 2 2 2 3 3 3 ...
-        #print "referenzio"
         if not self.ref_cds:
             ref_original_c    = self.ref_original.getCoordsets()
             ref_structures_c  = self.ref_structures.getCoordsets()
@@ -1033,7 +992,6 @@ class ScoreDRMSD(Score):
         try:
             from libdfs import _get_drmsd
             self._get_drmsd = _get_drmsd
-            #log.info("Fast Cython implementation will be used!")
         except ImportError:
             log.warning("Fast compiled version of DRMSD calculation not found; standard python will be used. Expect high memory usage")
             self._get_drmsd = self._get_drmsd_slow
@@ -1169,7 +1127,6 @@ def get_scaling_factors(original,
         out[this_idxs,:] = cd_function(ref_original_c, filtered_fitted_ref_structures.getCoordsets())
 
     out = np.array(out)
-    #return target_cd / out, out, np.array(coords_out)
     return out, out, np.array(coords_out)
 
 

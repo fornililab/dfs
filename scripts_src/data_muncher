@@ -1,6 +1,7 @@
 #!/usr/bin/env python
-# data_muncher.py - Write data in .h5 files from DFS runs in easily readable 
-# formats Copyright (C) 2015 Matteo Tiberti <matteo.tiberti@gmail.com>
+# data_muncher - Write data in .h5 files from DFS runs in easily readable 
+# formats 
+# Copyright (C) 2017 Matteo Tiberti <matteo.tiberti@gmail.com>
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -200,14 +201,17 @@ if __name__ == "__main__":
 
     argparser = argparse.ArgumentParser(description=intro,
                                         epilog=outro,
-                                        formatter_class=RawTextHelpFormatter)
-    required_options = argparser.add_argument_group('required options')                                                                             
+                                        formatter_class=RawTextHelpFormatter,
+                                        add_help=False)
+    required_options = argparser.add_argument_group('required arguments')
+    optional_options = argparser.add_argument_group('optional arguments')
                                      
     required_options.add_argument("-f", "--details", dest="HDF5", type=str, help="input HDF5 file", required=True)
     required_options.add_argument("-p", "--pdb", type=str, dest="PDB", 
                            help="Original PDB structure", default=None, required=True)
 
-    argparser.add_argument("-w", "--write", dest="data_types", nargs='*', metavar="WRITABLE",
+    optional_options.add_argument("-h", "--help", action="help", help="Show this help message and exit")
+    optional_options.add_argument("-w", "--write", dest="data_types", nargs='*', metavar="WRITABLE",
                            type=str, choices=data_types, help="Choose \
 one or more data type that should be saved as the output files, among: \
 force_vectors, displacements, displacements_after_fit, perturbed_coordinates, \
@@ -216,15 +220,15 @@ max_score_perturbed_coordinates, max_score_fitted_perturbed_coordinates, \
 scaling_factors. 'all' just saves everything is available. If no option \
 is given, data_muncher will just display metadata and quit.", 
                            default=None)
-    argparser.add_argument("-t", "--textual", dest="use_dat", 
+    optional_options.add_argument("-t", "--textual", dest="use_dat", 
                            default=False, action='store_true', help="Write \
 data in simple text format instead of npz.")
-    argparser.add_argument("-d", "--decimal", dest="decimal", type=int, 
+    optional_options.add_argument("-d", "--decimal", dest="decimal", type=int, 
                            default=3, action='store', help="Number of decimal \
 places to be used in writing files (default: 3)")
-    argparser.add_argument("-R", "--first-sites", dest="reference_residue", type=str, default=["protein and name CA"], 
+    optional_options.add_argument("-R", "--first-sites", dest="reference_residue", type=str, default=["protein and name CA"], 
                            help="First site (default: protein and name CA)", nargs='+', metavar='FIRST_SITE')
-    argparser.add_argument("-D", "--second-sites", dest="dfs_residue", type=str, default=["protein and name CA"], 
+    optional_options.add_argument("-D", "--second-sites", dest="dfs_residue", type=str, default=["protein and name CA"], 
                            help="Second site (default: protein and name CA)", nargs='+', metavar='SECOND_SITE')
 
     args = argparser.parse_args()
