@@ -26,6 +26,6 @@ on the dfs GitHub repository (https://github.com/fornililab/dfs) or contact the
 authors for further assistance.
 
 Once a test run is complete, if you need to run it again for further testing,
-please clean the test directories by running
+please clean the test directories first by running
 
     ./clean_tests.sh

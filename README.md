@@ -51,4 +51,5 @@ A step-by-step [tutorial](doc/tutorial) is also included.
 If you publish results produced with the DFS or develop methods based on the DFS
 code, please cite the following paper:
 
-<reference>
+	M. Tiberti, A. Pandini, F. Fraternali, A. Fornili, "In silico identification of rescue sites by double force scanning", submitted
+

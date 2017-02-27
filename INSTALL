@@ -20,11 +20,12 @@ documentation for specific cases not covered here.
 Download #
 ##########
 
-The source files for the most current distribution of DFS are available at 
-[LINK]. You can either download the zip package or clone it in any given 
+The source files for the most current release of DFS are available at
+https://github.com/fornililab/dfs/releases/latest. You can either download the
+zip package from this page or clone the GitHub repository in any given 
 user-available directory by using git:
     
-    git clone [LINK2]
+    git clone https://github.com/fornililab/dfs
 
 If you have downloaded the zip package instead you need to unzip it:
 
