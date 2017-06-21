@@ -156,7 +156,7 @@ if __name__ == '__main__':
     ra_power = np.average(ra_powers, axis=0)
 
     try:
-        np.savetxt(args.outfile, ra_power, fmt="%.3f")
+        np.savetxt(args.outfile, ra_power, fmt="%.5f")
     except:
         log.error("Couldn't write file %s, Exiting..." % args.outfile)
 
