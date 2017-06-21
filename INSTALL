@@ -3,13 +3,14 @@ Prerequisites #
 ###############
 
 DFS is a collection of Python and Cython libraries and scripts. The software is
-avalalble for Linux and OS X/macOS. Installing and running the DFS scripts has
-the following requirements:
+avalalble for Linux, OS X/macOS and Windows. Installing and running the DFS 
+scripts has the following requirements:
 
 * Python 2.x (>= 2.7)
 * Cython >= 0.18
 * Python 2 packages: setuptools, numpy, h5py, ProDy
 * For macOS only, OpenBLAS (http://www.openblas.net)
+* a C compiler (e.g. gcc)
 
 The installation instructions for prerequisite packages are included in the
 following section. These should cover standard Linux and OS X/macOS
@@ -22,10 +23,10 @@ Download #
 
 The source files for the most current release of DFS are available at
 https://github.com/fornililab/dfs/releases/latest. You can either download the
-zip package from this page or clone the GitHub repository in any given 
+zip package from this page or clone the GitHub repository in any given
 user-available directory by using git:
-    
-    git clone https://github.com/fornililab/dfs
+
+    git clone https://github.com/fornililab/dfs.git
 
 If you have downloaded the zip package instead you need to unzip it:
 
@@ -162,3 +163,50 @@ This can be done with (where /path/to/files is the location reported in files.tx
 
 this line can also be added to the .profile or .bash_profile file in the user's
 $HOME in order for dfs to be available by default from newly opened terminals.
+
+Microsoft Windows
+-------------------------------------------------
+
+DFS can be installed and run on Windows, even though the process to do so is
+more complicated and requires installing the whole Python 2.7 stack as well
+as a compiler. This operation can be made simpler by installing Python as the
+Anaconda package for Windows. In order to install DFS from scratch you need to:
+
+1. Install the Anaconda package with Python 2.7, 32bit 
+from https://www.continuum.io/downloads
+
+2. Install the Microsoft Visual C++ Compiler for Python 2.7 
+from https://www.microsoft.com/en-us/download/details.aspx?id=44266
+
+3. Install the PyPi package for ProDy 
+from https://pypi.python.org/pypi/ProDy/#downloads . The 32bit, Python 2.7
+version is what is required. 
+
+4. Download manually the zip package and uncompress it in a directory of your
+choice. For this example we will use your user home directory (in this 
+example C:\Users\User\). Write down the location of this directory.
+
+5. Run the Anaconda Python prompt: click on Start Menu, All Programs, Anaconda2 (32-bit), Anaconda Prompt. A Shell prompt will open.
+
+5. In the prompt, change directory to the source directory of point 4:
+    
+    cd C:\Users\User\dfs-master
+
+notice that the directory might have different names depending on the branch
+it was downloaded from on github. It is usually either dfs-master or 
+dfs-releases; we will use the former for this example. 
+
+6. Install the DFS package:
+
+    python setup.py install
+
+the DFS scripts will be available, by default, under C:\ProgramData\Ananconda2\Scripts .
+
+7. Rename the dfs script file to dfs.py. This is essential for it to work under
+Windows:
+
+    move C:\ProgramData\Ananconda2\Scripts\dfs C:\ProgramData\Ananconda2\Scripts\dfs.py
+
+8. Run dfs as usual. Please notice that the tutorial scripts will not work
+as they are not compatible with the Windows Shell.
+
