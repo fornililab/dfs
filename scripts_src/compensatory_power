@@ -25,7 +25,7 @@ one or more plain-text matrix file written by the dfs script. See the user
 manual for details.
 
 When option -P is used, the compensatory power values are written in the
-B-factor field of the PDB file (values are first multiplied by 10 to avoid
+B-factor field of the PDB file (values are first multiplied by 100 to avoid
 loss of precision)
 
 Example:
@@ -172,6 +172,6 @@ if __name__ == '__main__':
             betas[sel_res_index.getIndices()] = ra_power[i]
         
         try:
-            pd.writePDB(args.pdb_outfile, structure, beta=betas*10.0)
+            pd.writePDB(args.pdb_outfile, structure, beta=betas*100.0)
         except:
             log.error("Couldn't write file %s, Exiting..." % args.pdb_outfile)
