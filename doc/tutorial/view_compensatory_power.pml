@@ -1,16 +1,19 @@
 load compensatory_power.pdb
-remove chain B
+hide everything
 
-select chain_A, chain A
-disable chain_A
+create chain_A, chain A
 
 hide ev
 bg_color white
 show cartoon, chain_A
 center visi
 
-spectrum b, palette=blue_red, selection=chain_A
+# Spectrum interval defined by  minimum=2nd percentile and  maximum=98th percentile 
+spectrum b, palette = blue_white_red, selection = chain_A, minimum = 23.3, maximum = 64.8
 show surface, chain_A
-select predicted_compensatory_residues, b>4.90
+# Selection of top 72% residues, P > 49.1
+create predicted_compensatory_residues, b > 49.1
+hide everything, predicted_compensatory_residues
+show spheres, predicted_compensatory_residues
 color green, predicted_compensatory_residues
 set transparency, 0.3
