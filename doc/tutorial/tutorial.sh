@@ -45,7 +45,7 @@ forces_config=forces.ini
 np=4
 
 # command line
-echo now running: $dfs -p $pdb -f $forces_config -c $c -g $g -s $selection --np $np -v
+echo "now running: $dfs -p $pdb -f $forces_config -c $c -g $g -s $selection --np $np -v"
 $dfs -p $pdb -f $forces_config -c $c -g $g -s $selection --np $np
 
 # Two matrix files are saved, containing the rescuability score matrix 
