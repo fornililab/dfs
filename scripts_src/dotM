@@ -1,0 +1,345 @@
+#!/usr/bin/env python
+# dotM - calculate RMSIP between dfs displacements and normal modes.
+# Copyright (C) 2017 Matteo Tiberti <matteo.tiberti@gmail.com>
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/li.censes/>.
+
+
+import numpy as np
+import prody as pd
+import h5py
+import argparse
+from argparse import RawTextHelpFormatter
+from prody import LOGGER as log
+from itertools import product
+from dfsutils import P_XYZ, FP_XYZ, RAW_SCORES
+
+intro = """dotM calculates the Root Mean Square Inner Product (RMSIP) between
+the ANM normal modes and the displacement vectors calculated by 
+dfs as the difference between the structure perturbed by two forces and
+either the unperturbed structure (-m option) or the structure perturbed by a
+single force (default). 
+
+RMSIP is a measure of overlap between the two different
+sets of vectors and ranges from 0 to 1, where 1 indicates perfectly 
+superimposable sets.
+
+Please notice that dotM requires some information written in the .h5 file
+to work, namely the perturbed_coordinates or fitted_perturbed_coordinates
+and raw_score_matrix.
+
+Examples:
+
+    dotM -f fixed_force_details.h5 -p original.pdb -R A5 -D A10 -r 1 -d 5
+"""
+
+outro=""
+min_s = "min"
+max_s = "max"
+
+def tupleize(a,b,matrix):
+    return ( np.array([a]), np.array([b]) )
+
+def where_max(a,b,matrix):
+    return np.where(matrix == np.max(matrix))
+
+def where_min(a,b,matrix):
+    return np.where(matrix == np.min(matrix))
+
+if __name__ == "__main__":
+
+    parser = argparse.ArgumentParser(description=intro, epilog=outro, formatter_class=RawTextHelpFormatter, add_help=False)
+    required_options = parser.add_argument_group('required arguments')
+    optional_options = parser.add_argument_group('optional arguments')
+
+    required_options.add_argument("-f", "--details", type=str, dest="h5_fname",
+                        help="HDF5 details file from a dfs calculation", required=True)
+    required_options.add_argument("-p", "--pdb", dest="original_pdb", type=str, 
+                                  help="Original unperturbed PDB file", required=True)
+    required_options.add_argument("-R", "--first-sites", dest="reference_residue", type=str, default=None, 
+help="First sites to be considered (see user manual)", required=True, nargs='*', metavar='FIRST_SITE')
+    required_options.add_argument("-D", "--second-sites", dest="dfs_residue", type=str, default=None, 
+help="Second site to be considered (see user manual)",  required=True, nargs='*', metavar='SECOND_SITE')
+
+    optional_options.add_argument("-h", "--help", action="help", help="Show this help message and exit")
+    optional_options.add_argument("-m", "--pdb-ref-coords", dest="do_disp_orig", default=False, action="store_true", 
+help="Use the coordinates in the unperturbed PDB instead of the single-force structures to calculate displacements")
+    optional_options.add_argument("-r", "--first-site-direction", dest="r_score", default=max_s, type=str, 
+help="Direction of the force on the first site ('max' or number; default: 'max')", metavar='FS_DIRECTION')
+    optional_options.add_argument("-d", "--second-site-direction", dest="d_score", default=max_s, type=str, 
+help="Direction of the force on the second site ('max' or number; default: 'max')", metavar='SS_DIRECTION')
+    optional_options.add_argument("-n", "--n-modes", dest="n_modes", help="number of ANM modes to be \
+used for the calculation of RMSIP (default: 10)",
+default=10, type=int)
+    optional_options.add_argument("-t", "--data-type", dest="data_type", help="data type to be used for \
+the calculation of displacements (default: %s)"%P_XYZ, default=P_XYZ, choices=(P_XYZ, FP_XYZ))
+    optional_options.add_argument("-o", "--output-rmsip", dest="output_file", help="name of text output \
+file (default: rmsip.txt)", default="rmsip.txt")
+    optional_options.add_argument("-e", "--output-entropy", dest="entropy_file", help="name of text output\
+file for Shannon entropies (default: entropy.txt)", default="entropy.txt")
+
+    args = parser.parse_args()
+
+    args.reference_residue = " ".join(args.reference_residue)
+    args.dfs_residue = " ".join(args.dfs_residue)
+
+    pd.confProDy(verbosity='warning')
+    
+    try:
+        s = pd.parsePDB(args.original_pdb)
+    except:
+        log.error("Couldn't read or parse PDB file. Exiting...")
+        exit(1)
+
+    if args.reference_residue.isdigit():
+        #ref_r_sel = s.select("protein and resindex %s and name CA" % args.reference_residue)
+        args.reference_residue = int(args.reference_residue)
+        if args.reference_residue > s.numResidues() or args.reference_residue < 0:
+            log.error("Residue number provided as first site is not consistent with the provided structure. Exiting...")
+            exit(1)
+        ref_r_sel = np.array([args.reference_residue])
+
+    else:
+        if len(args.reference_residue.strip().split()) == 1 and args.reference_residue[0].isalpha() \
+        and args.reference_residue[0].isupper() and args.reference_residue[1:].lstrip("-").isdigit():
+            ref_r_sel_o = s.select("chain %s and resnum %s and name CA" % (args.reference_residue[0],
+                                                                     args.reference_residue[1:]))
+            if ref_r_sel_o is None:
+                ref_r_sel = []
+            else:
+                ref_r_sel = np.array(ref_r_sel_o.getResindices())
+            
+            if len(ref_r_sel) > 1:
+                log.error("Residue %s%s has more than one CA! Exiting.." % (args.reference_residue[0],\
+                                                                     args.reference_residue[1:]))
+                exit(1)
+        else:
+            try:
+                ref_r_sel = s.select(args.reference_residue).getResindices()
+            except: 
+                log.error("Selection string for first sites is wrong. Exiting...")
+                exit(1)
+                
+    if len(ref_r_sel) < 1:
+        log.error("Couldn't find any residue in PDB file that matches option -R. Exiting...")
+        exit(1)
+
+    if args.dfs_residue.isdigit():
+        #dfs_r_sel = s.select("protein and resindex %s and name CA" % args.dfs_residue)
+        args.dfs_residue = int(args.dfs_residue)
+        if args.dfs_residue > s.numResidues() or args.dfs_residue < 0:
+            log.error("Residue number provided as second site is not consistent with the provided structure. Exiting...")
+            exit(1)
+        dfs_r_sel = np.array([args.dfs_residue])
+    else:
+        if len(args.dfs_residue.strip().split()) == 1 and args.dfs_residue[0].isalpha() \
+        and args.dfs_residue[0].isupper() and args.dfs_residue[1:].lstrip("-").isdigit():
+            dfs_r_sel_o = s.select("chain %s and resnum %s and name CA" % (args.dfs_residue[0],
+                                                                 args.dfs_residue[1:]))
+            if dfs_r_sel_o is None:
+                dfs_r_sel = []
+            else:
+                dfs_r_sel = np.array(dfs_r_sel_o.getResindices())
+
+            if len(dfs_r_sel) > 1:
+                log.error("Residue %s%s has more than one CA! Exiting.." % (args.dfs_residue[0],\
+                                                                     args.dfs_residue[1:]))
+                exit(1)
+        else:
+            try:
+                dfs_r_sel = s.select(args.dfs_residue).getResindices()
+            except: 
+                log.error("Selection string for second mutation sites is wrong. Exiting...")
+                exit(1)
+    if len(dfs_r_sel) < 1:
+        log.error("Couldn't find any residue in PDB file that matches option -D. Exiting...")
+        exit(1)
+
+    pairs = product(ref_r_sel, dfs_r_sel)
+    
+    h5_fname = args.h5_fname
+    n_modes = int(args.n_modes)
+
+    if str.isdigit(args.r_score):
+        args.r_score = int(args.r_score)
+    elif args.r_score != max_s:
+        log.error("Option -r must be either a number or 'max'. Exiting...")
+        exit(1)
+    if str.isdigit(args.d_score):
+        args.d_score = int(args.d_score)
+    elif args.d_score != max_s:
+        log.error("Option -d must be either a number or 'max'. Exiting...")
+        exit(1)
+
+    r_d_idx = [args.r_score, args.d_score]
+
+    if args.r_score == max_s or args.d_score == max_s:
+        func = where_max
+    else:
+        func = tupleize
+    try:
+        fh = h5py.File(h5_fname, 'r')
+    except:
+        log.error("Couldn't read or parse details file. Exiting...")
+        exit(1)
+
+    if args.data_type not in fh.attrs['available_data'].split(','):
+        log.error("data type %s not found in details file! Exiting..." % args.data_type)
+        exit(1)
+    if RAW_SCORES not in fh.attrs['available_data'].split(','):
+        log.error("data type %s not found in details file! Exiting..." % RAW_SCORES)
+        exit(1)
+
+    gamma = fh.attrs["gamma"]
+    cutoff = fh.attrs["cutoff"]
+    
+    anm = pd.ANM()
+    anm.buildHessian(s, gamma=gamma, cutoff=cutoff)
+    anm.calcModes(n_modes=n_modes)
+    ev = anm.getEigvecs()
+    ds = ev.T.reshape((ev.shape[1],len(s),3))
+
+    pms = []
+    rm  = []
+    pos = []
+    neg = []
+    rescued_pms = []
+    otherwise_positive = []
+    negative  = []
+    all_cases = []
+
+    try:
+        out_fh = open(args.output_file, 'w')
+    except:
+        log.error("Couldn't write file %s; exiting..." % args.output_file)
+        
+    inv_vals = {}
+    inv_rmsips = {}
+
+    for pair in pairs:
+
+        if pair[1] not in inv_vals.keys():        
+            inv_vals[pair[1]] = {}
+            inv_rmsips[pair[1]] = {}
+        if pair[0] not in inv_vals[pair[1]].keys():
+            inv_vals[pair[1]][pair[0]] = []
+        
+        path = "/%s/%s/" % (pair[0], pair[1])
+        path_ref = "/%s/" % (pair[0])
+
+        this_rs = np.array(fh[path][RAW_SCORES])
+        n_elms = int(np.sqrt(this_rs.shape[0]))
+
+        where = func(args.r_score, args.d_score, this_rs)
+        if where[0].shape[0] > 1:
+            where = (np.array([where[0][0]]), np.array([where[1][0]]))
+        where_idx = where[0][0]*n_elms + where[1][0]
+
+        selection = "name CA " + " and ".join(["(not resindex %s)"%x for x in pair[0:2]])
+        s_sel =   s.select(selection)
+
+        if not args.do_disp_orig:
+            ref_coords  = np.array(fh[path_ref][args.data_type])
+            s_ref = s.copy()
+            s_ref.setCoords(ref_coords[where_idx])
+            sel_ref = s_ref.select(selection)
+            t = pd.calcTransformation(sel_ref, s_sel)
+            t_ref = pd.applyTransformation(t, s_ref)
+        else:
+            t_ref = s
+
+        this_coords = np.array(fh[path][args.data_type])
+        s_dfs = s.copy()
+        s_dfs.setCoords(this_coords[where_idx])
+        sel_dfs = s_dfs.select(selection)
+        t = pd.calcTransformation(sel_dfs, s_sel)
+        t_dfs = pd.applyTransformation(t, s_dfs)
+
+        displacements = t_dfs.getCoords() - t_ref.getCoords()
+
+        norm_displacements = displacements / np.linalg.norm(displacements)
+
+        this_sum = 0
+
+        for i,m in enumerate(ds):
+            this_val = np.dot(norm_displacements.flatten(), m.flatten())**2
+            inv_vals[pair[1]][pair[0]].append(np.sqrt(this_val))
+            this_sum += this_val
+
+        rmsip = np.sqrt(this_sum)
+        inv_rmsips[pair[1]][pair[0]] = rmsip
+
+        if pair[0] != pair[1]:
+            out_fh.write("Residues %s-%d%s, %s-%d%s, score %.3f; RMSIP is %.3f\n" % ( s[pair[0]].getChid(), s[pair[0]].getResnum(), s[pair[0]].getResname(),
+                                                                             s[pair[1]].getChid(), s[pair[1]].getResnum(), s[pair[1]].getResname(),
+                                                                             this_rs[where],
+                                                                             rmsip ))
+
+            for i,v in enumerate(inv_vals[pair[1]][pair[0]]):
+                out_fh.write("\tMode %i: %.3f\n" % (i,v))
+        
+        else:
+            out_fh.write("Residues %s-%d%s, %s-%d%s, score %.3f; RMSIP is %s\n" % ( s[pair[0]].getChid(), s[pair[0]].getResnum(), s[pair[0]].getResname(),
+                                                                         s[pair[1]].getChid(), s[pair[1]].getResnum(), s[pair[1]].getResname(),
+                                                                         this_rs[where],
+                                                                         "NA" ))
+
+            
+    out_fh.close()
+
+    entropies = {}
+
+    try:
+        entropy_fh = open(args.entropy_file, 'w')
+    except:
+        log.error("Couldn't write file %s; exiting..." % args.entropy_file)
+
+    for k,v in inv_vals.iteritems():
+
+        this_ss_rmsips = zip(*[d for d in inv_rmsips[k].items()])
+        this_ss_dotp = zip(*[(d[0], np.max(d[1])) for d in v.items()])
+        this_ss_max_rmsips_idx = np.argmax(this_ss_rmsips[1])
+        this_ss_max_dotp_idx = np.argmax(this_ss_dotp[1])
+       
+        print "Maximum RMSIP over second site %s-%d%s : %.3f for first site %s-%d%s" % \
+	    	(s[k].getChid(), s[k].getResnum(), s[k].getResname(),
+	    	this_ss_rmsips[1][this_ss_max_rmsips_idx],
+	    	s[this_ss_rmsips[0][this_ss_max_rmsips_idx]].getChid(),
+	    	s[this_ss_rmsips[0][this_ss_max_rmsips_idx]].getResnum(),
+	    	s[this_ss_rmsips[0][this_ss_max_rmsips_idx]].getResname())
+
+        print "Maximum overlap over second site %s-%d%s : %.3f for first site %s-%d%s" % \
+	    	(s[k].getChid(), s[k].getResnum(), s[k].getResname(),
+	    	this_ss_dotp[1][this_ss_max_dotp_idx],
+	    	s[this_ss_dotp[0][this_ss_max_dotp_idx]].getChid(),
+	    	s[this_ss_dotp[0][this_ss_max_dotp_idx]].getResnum(),
+	    	s[this_ss_dotp[0][this_ss_max_dotp_idx]].getResname())
+
+        pos_max = []
+        for l,w in v.iteritems():
+            if l == k:
+                continue
+            pos_max.append(np.argmax(w))
+
+        pos_max = np.array(pos_max)
+
+        if len(pos_max) == 0:
+            continue
+
+        pd = np.bincount(pos_max) / np.float64(pos_max.shape[0])
+        pd = pd[ pd != 0]
+        H = - np.sum(pd * np.log2(pd))
+        entropy_fh.write("%s-%d%s\t%.3f\n" % (s[k].getChid(), s[k].getResnum(), s[k].getResname(), H))
+
+    entropy_fh.close()

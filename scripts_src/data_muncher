@@ -1,0 +1,406 @@
+#!/usr/bin/env python
+# data_muncher - Write data in .h5 files from DFS runs in easily readable 
+# formats 
+# Copyright (C) 2017 Matteo Tiberti <matteo.tiberti@gmail.com>
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/li.censes/>.
+
+
+intro = """data_muncher reads and digests a HDF5 binary format data file written
+by dfs and writes files in the current directory that are easier to access and
+read. It saves numerical data types as .npz numpy-readable files or text files
+and structural data as .dcd trajectory files. 
+
+As a HDF5 dfs file can contain different types of data, the user should specity
+the ones he's interested in with option -w. Options -R and -D control the
+residues of which details will be written (respectively, first and second site).
+
+If -w is not specified the metadata for the dfs run is printed on screen and
+the program exits.
+
+Depending on what is requested, data_muncher can write a huge number of files
+that take big amounts of disk space, so be careful for what you ask for :)
+
+Example:
+
+    data_muncher -w force_vectors -t -d 3 -f fixed_force_details.h5 \\
+    -p original.pdb
+"""
+outro=""
+
+import h5py
+import numpy as np
+from prody import LOGGER as log
+from dfsutils import DF, DR, F_DR, RAW_SCORES, P_XYZ, FP_XYZ
+import prody as pd
+from itertools import product
+
+
+
+def get_data_from_pairs(fh, pairs, data_types=[]):
+    for pair in pairs:
+        if pair[1]is None:
+            current = "/%d/" % pair[0]
+        else:
+            current = "/%d/%d/" % (pair[0], pair[1])
+        for d in data_types:
+            if d in fh[current].keys():
+                yield (current, d, np.array(fh[current][d]))
+    
+def get_data_from_pairs_best(fh, pairs, data_type):
+    if data_type == MAX_SCORE_FP_XYZ:
+        coord_type = FP_XYZ
+    elif data_type == MAX_SCORE_P_XYZ:
+        coord_type = P_XYZ
+
+        for pair in pairs:
+            if pair[1]is None:
+                current = "/%d/" % pair[0]
+            else:
+                current = "/%d/%d/" % (pair[0], pair[1])
+    
+            try:
+                this_rs = np.array(fh[current][RAW_SCORES])
+            except:
+                yield None
+                return
+    
+            current_ref = current.split("/")[1]
+    
+            this_coords_ref = np.array(fh[current_ref][coord_type])
+            this_coords = np.array(fh[current][coord_type])
+    
+            n_elms = int(np.sqrt(this_coords.shape[0]))
+    
+            where = np.array(np.where(this_rs == np.max(this_rs)))
+            where_idx = where[0][0]*n_elms + where[1][0]
+    
+            max_coords = this_coords[where_idx,:,:]
+            ref_max_coords = this_coords_ref[where_idx,:,:]
+    
+            all_coords = np.array([ref_max_coords, max_coords])
+    
+            yield (current, data_type, all_coords)
+
+def write_data(structure, atoms, atom_indices, d, fmt="%.5f", highest=False, lowest=False):
+
+    current, data_type, data = d
+    if current == '/':
+        return
+    
+    this_idxs = map(int, filter(lambda x: x != '', current.split("/")))
+    
+    idx_matching = []
+    for idx in this_idxs:
+        idx_matching.append( atoms.getIndices()[np.where(atom_indices==idx)[0]][0] )
+
+    this_atoms = [ structure[s] for s in idx_matching ]
+
+    label = ",".join(["%s-%s%d" % (a.getChid(), a.getResname(), a.getResnum()) for a in this_atoms])
+
+    if data_type in [DF, DR, F_DR, RAW_SCORES, ref_CD, dfs_CD]:
+        if data_type == DF:
+            sel_forces = []
+            for idx in this_idxs:
+                sel_forces.extend(np.arange(idx*3, (idx+1)*3, 1))
+            data = data[:, sel_forces]
+            fname = "force_vectors_%s.%s" % (label, num_ext)
+            
+    
+        elif data_type == DR:
+            fname = "displacements_%s.%s" % (label, num_ext)
+    
+        elif data_type == F_DR:
+            fname = "fitted_displacements_%s.%s" % (label, num_ext)
+
+        elif data_type == RAW_SCORES:
+            fname = "raw_scores_%s.%s" % (label, num_ext)
+
+        elif data_type == ref_CD:
+            fname = "reference_cd_%s.%s" % (label, num_ext)
+
+        elif data_type == dfs_CD:
+            fname = "dfs_cd_%s.%s" % (label, num_ext)
+            
+        np.savetxt(fname, data, fmt=decimal_fmt)
+
+    elif data_type in [P_XYZ, FP_XYZ]:
+        if data_type == P_XYZ:
+            fname = "displaced_structures_%s.dcd" % label
+
+        elif data_type == FP_XYZ:
+            fname = "fitted_displaced_structures_%s.dcd" % label
+
+        ensemble = pd.Ensemble()
+
+        lendata = int(np.sqrt(len(data)))    
+        for i in range(lendata):
+            for j in range(lendata):
+                ensemble.addCoordset(data[j*lendata+i])
+
+        pd.writeDCD(fname, ensemble)
+
+    elif data_type in [MAX_SCORE_P_XYZ, MAX_SCORE_FP_XYZ]:
+
+        if data_type == MAX_SCORE_P_XYZ:
+            fname = "displaced_structures_%s_max.pdb" % label
+            fname_ref = "displaced_structures_%s_max_ref.pdb" % label
+
+        elif data_type == MAX_SCORE_FP_XYZ:
+            fname = "fitted_displaced_structures_%s_max.pdb" % label
+            fname_ref = "fitted_displaced_structures_%s_max_ref.pdb" % label
+
+        this_structure = structure.copy()
+        this_structure_ref = structure.copy()
+
+        this_structure_ref.setCoords(data[0])
+        this_structure.setCoords(data[1])
+
+        pd.writePDB(fname_ref, this_structure_ref)
+        pd.writePDB(fname, this_structure)
+
+if __name__ == "__main__":
+
+    import argparse
+    from argparse import RawTextHelpFormatter    
+
+    ALL = "all"
+    ALL_AVAILABLE="all_available"
+    MAX_SCORE_P_XYZ = "max_score_perturbed_coordinates"
+    MAX_SCORE_FP_XYZ = "max_score_fitted_perturbed_coordinates"
+    SCORES = "score_matrix"
+    ref_CD = "pm_cdm"
+    dfs_CD = "sm_cdm"
+    SF = "scaling_factors"
+    
+    data_types =    [
+                        ALL,
+                        ALL_AVAILABLE,
+                        DF,
+                        DR,
+                        F_DR,
+                        P_XYZ,
+                        FP_XYZ,
+                        SCORES,
+                        RAW_SCORES,
+                        MAX_SCORE_P_XYZ,
+                        MAX_SCORE_FP_XYZ,
+                        SF
+                    ]
+
+    argparser = argparse.ArgumentParser(description=intro,
+                                        epilog=outro,
+                                        formatter_class=RawTextHelpFormatter,
+                                        add_help=False)
+    required_options = argparser.add_argument_group('required arguments')
+    optional_options = argparser.add_argument_group('optional arguments')
+                                     
+    required_options.add_argument("-f", "--details", dest="HDF5", type=str, help="input HDF5 file", required=True)
+    required_options.add_argument("-p", "--pdb", type=str, dest="PDB", 
+                           help="Original PDB structure", default=None, required=True)
+
+    optional_options.add_argument("-h", "--help", action="help", help="Show this help message and exit")
+    optional_options.add_argument("-w", "--write", dest="data_types", nargs='*', metavar="WRITABLE",
+                           type=str, choices=data_types, help="Choose \
+one or more data type that should be saved as the output files, among: \
+force_vectors, displacements, displacements_after_fit, perturbed_coordinates, \
+fitted_perturbed_coordinates, score_matrix, raw_score_matrix, \
+max_score_perturbed_coordinates, max_score_fitted_perturbed_coordinates, \
+scaling_factors. 'all' just saves everything is available. If no option \
+is given, data_muncher will just display metadata and quit.", 
+                           default=None)
+    optional_options.add_argument("-t", "--textual", dest="use_dat", 
+                           default=False, action='store_true', help="Write \
+data in simple text format instead of npz.")
+    optional_options.add_argument("-d", "--decimal", dest="decimal", type=int, 
+                           default=3, action='store', help="Number of decimal \
+places to be used in writing files (default: 3)")
+    optional_options.add_argument("-R", "--first-sites", dest="reference_residue", type=str, default=["protein and name CA"], 
+                           help="First site (default: protein and name CA)", nargs='+', metavar='FIRST_SITE')
+    optional_options.add_argument("-D", "--second-sites", dest="dfs_residue", type=str, default=["protein and name CA"], 
+                           help="Second site (default: protein and name CA)", nargs='+', metavar='SECOND_SITE')
+
+    args = argparser.parse_args()
+
+    args.reference_residue = " ".join(args.reference_residue)
+    args.dfs_residue = " ".join(args.dfs_residue)
+
+    pd.confProDy(verbosity='warning')
+    #pd.LOGGER._logger.setLevel(logging.WARNING)
+
+    # open details file
+    try:
+        fh = h5py.File(args.HDF5, 'r')
+    except:
+        log.error("HDF5 file not readable or wrong format. Exiting...")
+        exit(1)
+
+    # parse PDB and get structure
+    try:
+        structure = pd.parsePDB(args.PDB)
+    except:
+        log.error("Couldn't parse your model file (%s); Exiting..." % args.PDB)
+        exit(1)
+
+    # select atoms for building the model
+    try:
+        atoms = structure.select(fh.attrs['atom_selection'])
+    
+    except pd.SelectionError:
+        log.error("Your selection string in the HDF5 file was invalid. Exiting...")
+        exit(1)
+    if not atoms:
+        log.error("Your selection string resulted in no atoms being selected in your structure. Exiting...")
+        exit(1)
+    if len(atoms) < 2:
+        log.error("Your selection string resulted in less than two atoms being selected in your structure. Exiting...")
+        exit(1)
+
+    # decision tree for determining residue pairs
+    if args.reference_residue.isdigit():
+        ref_r_sel = np.array([int(args.reference_residue)])
+    else:
+        if len(args.reference_residue.strip().split()) == 1 and args.reference_residue[0].isalpha() \
+        and args.reference_residue[0].isupper() and args.reference_residue[1:].lstrip("-").isdigit():
+            ref_r_sel_o = structure.select("chain %s and resnum %s and name CA" % (args.reference_residue[0],
+                                                                     args.reference_residue[1:]))
+            if ref_r_sel_o is None:
+                ref_r_sel = []
+            else:
+                ref_r_sel = np.array(ref_r_sel_o.getResindices())
+            
+            if len(ref_r_sel) > 1:
+                log.error("Residue %s%s has more than one CA! Exiting.." % (args.reference_residue[0],\
+                                                                     args.reference_residue[1:]))
+                exit(1)
+        else:
+            try:
+                ref_r_sel = structure.select(args.reference_residue).getResindices()
+            except: 
+                log.error("Selection string for pathogenic mutation sites is wrong. Exiting...")            
+    if len(ref_r_sel) < 1:
+        log.error("Couldn't find any residue in PDB file that matches option -R. Exiting...")
+        exit(1)
+    
+    if args.dfs_residue.strip() == "none":
+        dfs_r_sel = np.array([None])
+    elif args.dfs_residue.isdigit():
+        dfs_r_sel = np.array([int(args.dfs_residue)])
+    else:
+        if len(args.dfs_residue.strip().split()) == 1 and args.dfs_residue[0].isalpha() \
+        and args.dfs_residue[0].isupper() and args.dfs_residue[1:].lstrip("-").isdigit():
+            dfs_r_sel_o = structure.select("chain %s and resnum %s and name CA" % (args.dfs_residue[0],
+                                                                 args.dfs_residue[1:]))
+            if dfs_r_sel_o is None:
+                dfs_r_sel = []
+            else:
+                dfs_r_sel = np.array(dfs_r_sel_o.getResindices())
+
+            if len(dfs_r_sel) > 1:
+                log.error("Residue %s%s has more than one CA! Exiting.." % (args.dfs_residue[0],\
+                                                                     args.dfs_residue[1:]))
+                exit(1)
+        else:
+            try:
+                dfs_r_sel = structure.select(args.dfs_residue).getResindices()
+            except: 
+                log.error("Selection string for secondary mutation sites is wrong. Exiting...")
+    if len(dfs_r_sel) < 1 and dfs_r_sel:
+        log.error("Couldn't find any residue in PDB file that matches option -D. Exiting...")
+
+        data_types =    [
+                        ALL,
+                        ALL_AVAILABLE,
+                        DF,
+                        DR,
+                        F_DR,
+                        P_XYZ,
+                        FP_XYZ,
+                        SCORES,
+                        RAW_SCORES,
+                        MAX_SCORE_P_XYZ,
+                        MAX_SCORE_FP_XYZ,
+                        SF
+                    ]
+
+    pairs = list(product(ref_r_sel, dfs_r_sel))
+
+    if args.decimal < 0:
+        log.error("Option -d must be 0 or positive. Exiting ...")
+        exit(1)
+
+    decimal_fmt = "%%.%df" % args.decimal
+
+    print "File %s metadata:" % args.HDF5
+    for k,v in fh.attrs.iteritems():
+        k += ":"
+        print "\t%s%s" %  (k.ljust(23),v)
+        
+    available_data = fh.attrs['available_data'].split(",")
+
+    if args.use_dat:
+        num_ext = "dat"
+    else:
+        num_ext = "npz"
+
+    if args.data_types is None:
+        exit(0)
+    elif ALL in args.data_types:
+        if len(args.data_types) > 1:
+            log.warning("all was specified in option --write, together with\
+others; all will be used.")
+        this_data_types = data_types[1:]
+    elif ALL_AVAILABLE in args.data_types:
+        this_data_types = available_data
+    else:
+        this_data_types = args.data_types
+
+    if (dfs_r_sel == np.array([None])).any() and (RAW_SCORES in this_data_types or 
+    MAX_SCORE_P_XYZ in this_data_types or MAX_SCORE_FP_XYZ in this_data_types):
+        log.error("some of the selected data types are only supported for two \
+or more residues (change option -D). Exiting...")
+        exit(1)
+        
+    sf_path = "/%s" % SF
+
+    if sf_path in fh and SF in this_data_types:
+        sf = 1.0/np.array(fh[sf_path])
+        sf_shape = np.int(np.sqrt(sf.shape[1]))
+        np.savetxt("scaling_factors.%s" % num_ext, sf[:,0:sf_shape], fmt=decimal_fmt)
+        this_data_types.remove(SF)
+        
+    if MAX_SCORE_P_XYZ in this_data_types and (RAW_SCORES not in available_data or P_XYZ not in available_data):
+        log.error("%s requires %s and %s to be present in details file. Exiting ..." % (MAX_SCORE_P_XYZ, RAW_SCORES, P_XYZ))
+        exit(1)
+    if MAX_SCORE_FP_XYZ in this_data_types and (RAW_SCORES not in available_data or FP_XYZ not in available_data):
+        log.error("%s requires %s and %s to be present in details file. Exiting ..." % (MAX_SCORE_FP_XYZ, RAW_SCORES, FP_XYZ))
+        exit(1)
+
+    atom_indices = atoms.getResindices()
+
+    if MAX_SCORE_P_XYZ in this_data_types:
+        for d in get_data_from_pairs_best(fh, pairs, data_type=MAX_SCORE_P_XYZ):
+            if d is not None:
+                write_data(structure, atoms, atom_indices, d, highest=True, lowest=False)
+        this_data_types.remove(MAX_SCORE_P_XYZ)
+
+    if MAX_SCORE_FP_XYZ in this_data_types:        
+        for d in get_data_from_pairs_best(fh, pairs, data_type=MAX_SCORE_FP_XYZ):
+            if d is not None:
+                write_data(structure, atoms, atom_indices, d, highest=True, lowest=False)
+        this_data_types.remove(MAX_SCORE_FP_XYZ)                
+
+    if this_data_types:
+        for d in get_data_from_pairs(fh, pairs, data_types = this_data_types):
+            write_data(structure, atoms, atom_indices, d)

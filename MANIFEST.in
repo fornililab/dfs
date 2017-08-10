@@ -1,0 +1,7 @@
+include README.md
+include LICENSE
+include INSTALL
+include dfsutils/libdfs.pyx
+
+graft examples
+

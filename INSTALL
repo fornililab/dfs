@@ -1,0 +1,212 @@
+###############
+Prerequisites #
+###############
+
+DFS is a collection of Python and Cython libraries and scripts. The software is
+avalalble for Linux, OS X/macOS and Windows. Installing and running the DFS 
+scripts has the following requirements:
+
+* Python 2.x (>= 2.7)
+* Cython >= 0.18
+* Python 2 packages: setuptools, numpy, h5py, ProDy
+* For macOS only, OpenBLAS (http://www.openblas.net)
+* a C compiler (e.g. gcc)
+
+The installation instructions for prerequisite packages are included in the
+following section. These should cover standard Linux and OS X/macOS
+configurations. Please refer to your system administrator or the relevant OS
+documentation for specific cases not covered here.
+
+##########
+Download #
+##########
+
+The source files for the most current release of DFS are available at
+https://github.com/fornililab/dfs/releases/latest. You can either download the
+zip package from this page or clone the GitHub repository in any given
+user-available directory by using git:
+
+    git clone https://github.com/fornililab/dfs.git
+
+If you have downloaded the zip package instead you need to unzip it:
+
+    unzip dfs.zip
+
+###################
+Previous versions #
+###################
+
+Before installing a new release of dfs, make sure you have uninstalled any
+previous version by manually removing all the installed files. A list of them
+and their location can be found in the files.txt file in the original 
+installation folder (provided that dfs was originally installed using the 
+ --record files.txt option).
+
+You can check the version of dfs (installed or not) from any installation
+directory by running:
+
+python setup.py -V
+
+Therefore, in order to assess your current installed version of dfs you 
+need run this command in the installation directory from which the 
+version available on your system was installed.
+
+###############
+Installation  #
+###############
+
+Linux - Debian-based (Debian, Ubuntu and others)
+-------------------------------------------------
+
+Please note that all the commands that start with "sudo" requires to be run by
+user with adminstrative permissions in most of Debian-based distributions.
+
+1. Installation of Python and Cython packages using the package manager apt:
+
+    sudo apt-get update && sudo apt-get install cython python-dev \
+    python-numpy python-setuptools python-pip python-h5py build-essential
+
+2. Installation of ProDy package using pip
+   (system-wide case):
+
+    sudo pip install ProDy
+
+   (local user case):
+    
+    pip install ProDy --user
+
+3. Installation of the DFS package. Enter the dfs directory: 
+   and run (system-wide case):
+
+    sudo python2.7 setup.py install --record files.txt
+
+    (local user case):
+
+    python2.7 setup.py install --user --record files.txt
+
+This will build the Cython files as well as copy the installation files in
+their destination directories. If you have installed the package system-wise,
+the user-executable scripts will already be available to the user as they are
+copied by default in /usr/local/bin. If the installation has been performed as a
+normal user, the files are usually located inside the current user's home
+directory $HOME (usually $HOME/.local/lib/python2.7/site-packages/dfsutils for
+the library files and $HOME/.local/bin/ for the scripts). The location of these
+files can be verified by reading the content of files.txt in the installation
+directory, in which the installation location of each file contained in the
+package is recorded during the installation. 
+
+It is advisable to add the scripts directory in the PATH system variable.
+Assuming that your script files are located in $HOME/.local/bin/ this can be
+done with:
+
+	export PATH=$HOME/.local/bin/:$PATH
+
+This line can also be added to the .profile or .bash_profile file in the user's
+$HOME so that the updated search PATH is available to any shell terminal opened. 
+
+OS X / macOS
+------------
+
+The installation of DFS on an OS X / macOS computer requires Xcode with
+command-line tools. Xcode can be obtained from the App store. The command line
+tools can be installed by running:
+
+    sudo xcode-select --install
+
+and following the on-screen instructions.
+
+1. Installation of Python and Cython packages:
+
+   The easiest way to install the prerequisites for dfs on OS X is
+   using the Macports package manager (http://macports.org): 
+   
+    sudo port selfupdate
+    sudo port install openblas-devel
+    sudo port install py27-numpy +openblas
+    sudo port install py27-setuptools py27-cython py27-pip\
+        py27-setuptools py27-h5py
+
+    please notice that numpy must be linked with openblas instead of 
+    standard macOS BLAS libraries (i.e. Accelerate). This is because the
+    default libraries are not compatible with how Python handles 
+    multiprocessing, therefore any dfs run that uses more than one
+    core will result in the Python interpreter crashing with a 
+    Segmentation fault error.
+    
+2. Installation of ProDy package using pip
+
+    sudo pip-2.7 install ProDy
+
+3. Installation of the DFS package. Enter the dfs directory: 
+   (system-wide case):
+
+    sudo python2.7 setup.py install --record files.txt
+
+   (local user case):
+
+    python2.7 setup.py install --user --record files.txt
+
+
+This will build the Cython/C files as well as copy the installation files in
+their destination directory. The location in the filesystem of the installed
+files can vary, depending on whether you are using the system Python 
+installation or the one shipped with MacPorts. You will be able to identify
+the location of the script files by looking into the files.txt log file which
+is written in the installation directory. If the installation has been performed
+using the intructions in this file, the script files are usually located in 
+$HOME/Library/Python/2.7/bin/.
+
+It is advisable to add the scripts directory in the PATH system variable.
+This can be done with (where /path/to/files is the location reported in files.txt):
+
+	export PATH=/path/to/files/:$PATH
+
+this line can also be added to the .profile or .bash_profile file in the user's
+$HOME in order for dfs to be available by default from newly opened terminals.
+
+Microsoft Windows
+-------------------------------------------------
+
+DFS can be installed and run on Windows, even though the process to do so is
+more complicated and requires installing the whole Python 2.7 stack as well
+as a compiler. This operation can be made simpler by installing Python as the
+Anaconda package for Windows. In order to install DFS from scratch you need to:
+
+1. Install the Anaconda package with Python 2.7, 32bit 
+from https://www.continuum.io/downloads
+
+2. Install the Microsoft Visual C++ Compiler for Python 2.7 
+from https://www.microsoft.com/en-us/download/details.aspx?id=44266
+
+3. Install the PyPi package for ProDy 
+from https://pypi.python.org/pypi/ProDy/#downloads . The 32bit, Python 2.7
+version is what is required. 
+
+4. Download manually the zip package and uncompress it in a directory of your
+choice. For this example we will use your user home directory (in this 
+example C:\Users\User\). Write down the location of this directory.
+
+5. Run the Anaconda Python prompt: click on Start Menu, All Programs, Anaconda2 (32-bit), Anaconda Prompt. A Shell prompt will open.
+
+5. In the prompt, change directory to the source directory of point 4:
+    
+    cd C:\Users\User\dfs-master
+
+notice that the directory might have different names depending on the branch
+it was downloaded from on github. It is usually either dfs-master or 
+dfs-releases; we will use the former for this example. 
+
+6. Install the DFS package:
+
+    python setup.py install
+
+the DFS scripts will be available, by default, under C:\ProgramData\Ananconda2\Scripts .
+
+7. Rename the dfs script file to dfs.py. This is essential for it to work under
+Windows:
+
+    move C:\ProgramData\Ananconda2\Scripts\dfs C:\ProgramData\Ananconda2\Scripts\dfs.py
+
+8. Run dfs as usual. Please notice that the tutorial scripts will not work
+as they are not compatible with the Windows Shell.
+

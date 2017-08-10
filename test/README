@@ -1,0 +1,31 @@
+##############
+Requirements #
+##############
+
+In order to run the tests for the this distribution of dfs you need to:
+
+1) Install the DFS package and its prerequisites; please see the INSTALL file
+in the main directory of the distribution
+
+2) have the distribution scripts in your PATH, so that they are available from
+command line; this is also described in the INSTALL file. 
+
+###################
+Running the tests #
+###################
+
+Just execute the run_test.sh file:
+
+    ./run_tests.sh
+
+the expected output for the script is "TEST PASSED" for all three tests.
+
+If tests fail please check that dfs has been installed correctly and that your
+Python environment is sound. If this is the case please open a detailed issue
+on the dfs GitHub repository (https://github.com/fornililab/dfs) or contact the
+authors for further assistance.
+
+Once a test run is complete, if you need to run it again for further testing,
+please clean the test directories first by running
+
+    ./clean_tests.sh

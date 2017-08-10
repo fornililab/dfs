@@ -1,0 +1,177 @@
+#! /usr/bin/env python
+# compensatory_power - calculate the compensatory power index
+# Copyright (C) 2017 Matteo Tiberti <matteo.tiberti@gmail.com>
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/li.censes/>.
+
+
+import numpy as np
+import prody as pd
+from prody import LOGGER as log
+
+intro="""compensatory_power calculates the compensatory power index from
+one or more plain-text matrix file written by the dfs script. See the user
+manual for details.
+
+When option -P is used, the compensatory power values are written in the
+B-factor field of the PDB file (values are first multiplied by 100 to avoid
+loss of precision)
+
+Example:
+
+    compensatory_power -m fixed_force_scores.dat -p original.pdb -o \\
+    normalized_score.dat -P normalized_score.pdb
+"""
+
+outro = ""
+
+def get_contacts(s, dist_co):
+    return np.sum(pd.buildDistMatrix(s) <= dist_co, axis=0, dtype=np.float)-1
+
+def get_raw_index(m, score_co, axis=0):
+    return np.sum(m > score_co, axis=axis, dtype=np.float)
+
+def rescale_minmax(vals):
+    return (vals - np.min(vals)) / (np.max(vals) - np.min(vals))
+
+if __name__ == '__main__':
+
+    import argparse
+    from argparse import RawTextHelpFormatter
+
+    parser = argparse.ArgumentParser(description=intro, 
+                                     epilog=outro,
+                                     formatter_class=RawTextHelpFormatter,
+                                     add_help=False)
+    required_options = parser.add_argument_group('required arguments')
+    optional_options = parser.add_argument_group('optional arguments')
+    
+    required_options.add_argument("-p", "--pdb", dest="pdb", type=str, action='store', help="PDB file filename", required=True)
+    required_options.add_argument("-m", "--score-matrix", dest="score_matrix", type=str, action='store', nargs='+', help="Score matrix filename(s).", required=True)
+
+    optional_options.add_argument("-h", "--help", action="help", help="Show this help message and exit")
+    optional_options.add_argument('-t', '--score-type', type=str, dest="type", action='store', choices=["rescue_ability", "rescuability"], default="rescue_ability", help=argparse.SUPPRESS)
+    #help="Use rescue_ability or rescuability values (default: rescue_ability
+    optional_options.add_argument('-s', '--selection-string', dest="sel_string", action='store', type=str, default=["protein and name CA"], nargs='+', help=("Selection string for the PDB file (default: protein and name CA)"))
+    optional_options.add_argument('-c', '--score-cutoff', dest="score_cutoff", type=float, action='store', default=0.0, help="Rescuability score cut-off to detect rescued positions (default: 0.0)")
+    optional_options.add_argument('-d', '--distance-cutoff', dest="distance_cutoff", type=float, action='store', default=15.0, help="Distance cut-off to identify contacts, in A (default: 15.0)")
+    optional_options.add_argument('-o', '--output', type=str, dest="outfile", action='store', default="normalized_score.dat", help="Name for the output file (default: normalized_score.dat)")
+    optional_options.add_argument('-q', '--output-pairs', type=str, dest="pairs_outfile", action='store', default=None, help=argparse.SUPPRESS)
+    #help="For each first-site residues, write identified second-sites according to the input matrix(es)"
+    optional_options.add_argument('-P', '--pdb-output', type=str, dest="pdb_outfile", action='store', default=None, help="Name for the output PDB file with the compensatory power values saved in the B-factor field (default: do not save)")
+    optional_options.add_argument('-r', '--no-rescale', dest="rescale", action="store_false", default=True, help=argparse.SUPPRESS)
+    #help="Don't rescale CP values between 0 and 1 (before averaging them)")
+
+    args = parser.parse_args()
+
+    if args.type == 'rescue_ability':
+        axis = 0
+    else:
+        axis = 1
+
+    matrices = []
+    for mat in args.score_matrix:
+        try:
+            matrices.append(np.loadtxt(mat))
+        except IOError:
+            log.error("Matrix file not found or not readable. Exiting...")
+            exit(1)
+        except ValueError:
+            log.error("Matrix file is in the wrong format. Exiting...")
+            exit(1)
+    matrices = np.array(matrices)
+
+    try:
+        structure = pd.parsePDB(args.pdb)
+    except:
+        log.error("Couldn't open or parse PDB file. Exiting...")
+        exit(1)
+
+    if structure is None:
+        log.error("PDB file not found or not readable. Exiting...")
+
+    args.sel_string = " ".join(args.sel_string)
+
+    try:
+        selection = structure.select(args.sel_string)
+    except pd.SelectionError:
+        log.error("The selection string is not valid. Exiting...")
+
+    if args.pairs_outfile is not None:
+        try:
+            fh_pairs = open(args.pairs_outfile, 'w')
+        except:
+            log.error("Couldn't write file %s. Exiting..." % args.output_pairs)
+            exit(1)  
+
+        fh_pairs.write("#First\tSecond\n")
+
+        compensatory_pairs = np.logical_or.reduce(matrices > args.score_cutoff)
+
+        for fs in np.arange(compensatory_pairs.shape[0]):
+            css = np.where(compensatory_pairs[fs,:])[0]
+            sel_fs = list(selection)[fs]
+            sel_fs_chid = sel_fs.getChid()
+            sel_fs_resnum = sel_fs.getResnum()
+
+            fh_pairs.write("%s%d\t" % (sel_fs_chid, sel_fs_resnum))
+
+            cs_strings = []
+
+            for cs in css:
+                sel_cs = list(selection)[cs]
+                sel_cs_chid = sel_cs.getChid()
+                sel_cs_resnum = sel_cs.getResnum()
+
+                cs_strings.append("%s%d" % (sel_cs_chid, sel_cs_resnum))
+
+            fh_pairs.write("%s\n" % ",".join(cs_strings))
+
+        fh_pairs.close()
+
+    contacts = get_contacts(selection, args.distance_cutoff)
+
+    ra_powers = []
+
+    for score_matrix in matrices:
+
+        raw_index = get_raw_index(score_matrix, args.score_cutoff, axis=axis)/contacts
+
+        if args.rescale:
+            raw_index = rescale_minmax(raw_index)
+
+        ra_powers.append(raw_index)
+
+    ra_power = np.average(ra_powers, axis=0)
+
+    try:
+        np.savetxt(args.outfile, ra_power, fmt="%.5f")
+    except:
+        log.error("Couldn't write file %s, Exiting..." % args.outfile)
+
+    if args.pdb_outfile is not None:
+    
+        all_res_indices = structure.getResindices()
+        betas = np.zeros(all_res_indices.shape)
+        selected_res_indices = np.unique(selection.getResindices())
+        
+        for i, idx in enumerate(selected_res_indices):
+            sel_res_index = structure.select("resindex %d" % idx)
+            
+            betas[sel_res_index.getIndices()] = ra_power[i]
+        
+        try:
+            pd.writePDB(args.pdb_outfile, structure, beta=betas*100.0)
+        except:
+            log.error("Couldn't write file %s, Exiting..." % args.pdb_outfile)
