@@ -32,7 +32,7 @@ import StringIO
 intro = """dfs implements the Double Force Scanning method for the identification 
 of compensatory mutations in proteins as detailed in:
 
-    M. Tiberti, A. Pandini, F. Fraternali, A. Fornili, "In silico identification of rescue sites by double force scanning", submitted
+    M. Tiberti, A. Pandini, F. Fraternali, A. Fornili, "In silico identification of rescue sites by double force scanning", Bioinformatics, accepted
 
 
 The method uses Linear Response Theory on Anisotropic Network Models (ANM)
