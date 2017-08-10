@@ -45,7 +45,7 @@ installation folder (provided that dfs was originally installed using the
 You can check the version of dfs (installed or not) from any installation
 directory by running:
 
-python setup.py -V
+python2.7 setup.py -V 
 
 Therefore, in order to assess your current installed version of dfs you 
 need run this command in the installation directory from which the 
