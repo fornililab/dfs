@@ -53,5 +53,5 @@ code, please cite the following paper:
 
 	M. Tiberti, A. Pandini, F. Fraternali, A. Fornili,
         "In silico identification of rescue sites by double force scanning",
-        Bioinformatics, accepted
+        Bioinformatics, 34(2), 2018, 207–214.
 

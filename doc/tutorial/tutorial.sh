@@ -14,14 +14,10 @@
 # for the moment as it is not strictly required for the subsequent
 # analyses. This run should take around 30 minutes on 4 Xeon cores @3.70GHz.
 
-# dfs scripts directory - to be changed according to the location of the 
-# dfs scripts in your filesystem
-scripts_dir=../../scripts_src
+dfs=`which dfs`
+compp=`which compensatory_power`
 
-dfs=$scripts_dir"/dfs"
-compp=$scripts_dir"/compensatory_power"
-
-pymol_binary=$(which pymol)
+pymol_binary=`which pymol`
 pymol_runfile="view_compensatory_power.pml"
 
 # input structure
@@ -53,7 +49,7 @@ $dfs -p $pdb -f $forces_config -c $c -g $g -s $selection --np $np
 # (fixed_displacements_scores.dat) mode.
 
 #################################################################################
-# 2 - calculate rescuability power index
+# 2 - calculate compensatory power
 # We feed both matrices calculated in the previous step to the 
 # compensatory_power script in order to calculate the compensatory 
 # power for each residue:
@@ -67,7 +63,7 @@ $compp -m fixed_force_scores.dat fixed_displacements_scores.dat -p $pdb -s $sele
 # which the DFS score was calculated (chain A residues in our example).
 
 #################################################################################
-# 3 - visualize rescuability power using PyMOL
+# 3 - visualize compensatory power using PyMOL
 
 # We can visualize the compensatory power on the structure using the
 # compensatory_power.pdb file generated in the previous setp and PyMOL. 
